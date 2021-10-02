@@ -1,18 +1,23 @@
 package de.mrpine.xkcdfeed.composeElemts
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.pager.*
 import kotlinx.coroutines.launch
 
@@ -23,13 +28,8 @@ fun MainContent() { //navRoute = mainView
     val favSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val scope = rememberCoroutineScope()
 
-    fun showFavSheet() {
-        scope.launch { favSheetState.show() }
-    }
-
     SheetLayout(
-        favSheetState,
-        ::showFavSheet
+        favSheetState
     )
 }
 
@@ -39,8 +39,7 @@ fun MainContent() { //navRoute = mainView
 @ExperimentalMaterialApi
 @Composable
 fun SheetLayout(
-    state: ModalBottomSheetState,
-    showFavSheet: () -> Unit
+    state: ModalBottomSheetState
 ) {
     ModalBottomSheetLayout(
         sheetContent = sheetContent(),
@@ -48,7 +47,7 @@ fun SheetLayout(
         sheetState = state,
         scrimColor = MaterialTheme.colors.primaryVariant.copy(alpha = 0.7f)
     ) {
-        MainScaffold(showFavSheet)
+        MainScaffold()
     }
 }
 
@@ -91,16 +90,9 @@ fun sheetContent(): @Composable (ColumnScope.() -> Unit) {
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun MainScaffold(showFavSheet: () -> Unit) {
+fun MainScaffold() {
 
-    Scaffold(floatingActionButton = {
-        FloatingActionButton(onClick = showFavSheet) {
-            Icon(
-                Icons.Default.Star,
-                "favourite"
-            )
-        }
-    }, topBar = { TopAppBar() }) {
+    Scaffold(topBar = { TopAppBar() }) {
         TabbedContent()
     }
 }
@@ -116,6 +108,7 @@ fun TopAppBar() {
 //</editor-fold>
 
 //<editor-fold desc="Tabs">
+//<editor-fold desc="Tab Main Layout">
 @ExperimentalPagerApi
 @Composable
 fun TabbedContent() {
@@ -156,11 +149,53 @@ fun TabbedContent() {
 @ExperimentalPagerApi
 @Composable
 fun TabContent(pagerState: PagerState, pagerScope: PagerScope, pageIndex: Int) {
-    Column() {
-        Text("lol Seite ${pageIndex + 1}")
+    when (pageIndex) {
+        0 -> Tab1()
+        1 -> Tab2()
+        else -> Text(text = "error occured")
     }
 }
 //</editor-fold>
 
+private const val TAG = "mainComposable"
+
+//<editor-fold desc="Tab Pages">
+@Composable
+fun Tab1() {
+    val viewModel: MainViewModel = viewModel()
+
+    Scaffold(floatingActionButton = {
+        FloatingActionButton(onClick = { viewModel.addToList("lol") }) {
+            Icon(Icons.Default.Star, "Star")
+        }
+    }) {
+        ComicList(array = viewModel.list)
+    }
+}
+
+@Composable
+fun Tab2() {
+    Text(text = "tab2")
+}
+
+@Composable
+fun ComicList(array: List<String>) {
+    Log.d(TAG, "ComicList: $array")
+    LazyColumn(Modifier.fillMaxSize()) {
+        items(array) { item ->
+            Text(text = item)
+        }
+    }
+}
+//</editor-fold>
+//</editor-fold>
+
 class MainViewModel : ViewModel() {
+    var list= mutableStateListOf("hi", "hello", "hallo")
+
+    fun addToList(item: String){
+        list.add(item)
+        Log.d(TAG, "addToList: ${list}")
+    }
+
 }
