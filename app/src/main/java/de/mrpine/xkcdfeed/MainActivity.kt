@@ -3,16 +3,17 @@ package de.mrpine.xkcdfeed
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.pager.ExperimentalPagerApi
-import de.mrpine.xkcdfeed.composeElemts.MainContent
-import de.mrpine.xkcdfeed.composeElemts.sheetContent
+import de.mrpine.xkcdfeed.composables.MainContent
+import de.mrpine.xkcdfeed.composables.sheetContent
 import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
 
 private const val TAG = "MainActivity"
@@ -34,6 +35,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+
     }
 }
 

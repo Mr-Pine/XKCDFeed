@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed.composeElemts
+package de.mrpine.xkcdfeed.composables
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
@@ -152,7 +152,7 @@ fun TabContent(pagerState: PagerState, pagerScope: PagerScope, pageIndex: Int) {
     when (pageIndex) {
         0 -> Tab1()
         1 -> Tab2()
-        else -> Text(text = "error occured")
+        else -> Text(text = "error occurred")
     }
 }
 //</editor-fold>
@@ -190,12 +190,13 @@ fun ComicList(array: List<String>) {
 //</editor-fold>
 //</editor-fold>
 
-class MainViewModel : ViewModel() {
-    var list= mutableStateListOf("hi", "hello", "hallo")
 
-    fun addToList(item: String){
+class MainViewModel : ViewModel() {
+    var list = mutableStateListOf("hi", "hello", "hallo")
+
+    fun addToList(item: String) {
         list.add(item)
-        Log.d(TAG, "addToList: ${list}")
+        Log.d(TAG, "addToList: $list")
     }
 
 }
