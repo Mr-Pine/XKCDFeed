@@ -1,6 +1,6 @@
 package de.mrpine.xkcdfeed.composables
 
-import android.util.Log
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,26 +11,28 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import com.google.accompanist.pager.*
+import de.mrpine.xkcdfeed.XKCDComic
+import de.mrpine.xkcdfeed.getHttpJSON
 import kotlinx.coroutines.launch
+import java.text.DateFormat
 
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun MainContent() { //navRoute = mainView
+fun MainContent(viewModel: MainViewModel) { //navRoute = mainView
     val favSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val scope = rememberCoroutineScope()
 
-    SheetLayout(
-        favSheetState
-    )
+    SheetLayout(favSheetState, viewModel)
 }
 
 
@@ -38,16 +40,14 @@ fun MainContent() { //navRoute = mainView
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun SheetLayout(
-    state: ModalBottomSheetState
-) {
+fun SheetLayout(state: ModalBottomSheetState, viewModel: MainViewModel) {
     ModalBottomSheetLayout(
         sheetContent = sheetContent(),
         sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
         sheetState = state,
         scrimColor = MaterialTheme.colors.primaryVariant.copy(alpha = 0.7f)
     ) {
-        MainScaffold()
+        MainScaffold(viewModel)
     }
 }
 
@@ -90,10 +90,10 @@ fun sheetContent(): @Composable (ColumnScope.() -> Unit) {
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun MainScaffold() {
+fun MainScaffold(viewModel: MainViewModel) {
 
     Scaffold(topBar = { TopAppBar() }) {
-        TabbedContent()
+        TabbedContent(viewModel)
     }
 }
 
@@ -111,7 +111,7 @@ fun TopAppBar() {
 //<editor-fold desc="Tab Main Layout">
 @ExperimentalPagerApi
 @Composable
-fun TabbedContent() {
+fun TabbedContent(viewModel: MainViewModel) {
 
     val tabPagerState = rememberPagerState(0)
     val scope = rememberCoroutineScope()
@@ -141,16 +141,21 @@ fun TabbedContent() {
             )
         }
         HorizontalPager(count = 2, state = tabPagerState) { page ->
-            TabContent(pagerState = tabPagerState, pagerScope = this, page)
+            TabContent(pagerState = tabPagerState, pagerScope = this, page, viewModel)
         }
     }
 }
 
 @ExperimentalPagerApi
 @Composable
-fun TabContent(pagerState: PagerState, pagerScope: PagerScope, pageIndex: Int) {
+fun TabContent(
+    pagerState: PagerState,
+    pagerScope: PagerScope,
+    pageIndex: Int,
+    viewModel: MainViewModel
+) {
     when (pageIndex) {
-        0 -> Tab1()
+        0 -> Tab1(viewModel)
         1 -> Tab2()
         else -> Text(text = "error occurred")
     }
@@ -161,15 +166,14 @@ private const val TAG = "mainComposable"
 
 //<editor-fold desc="Tab Pages">
 @Composable
-fun Tab1() {
-    val viewModel: MainViewModel = viewModel()
+fun Tab1(viewModel: MainViewModel) {
 
     Scaffold(floatingActionButton = {
-        FloatingActionButton(onClick = { viewModel.addToList("lol") }) {
+        FloatingActionButton(onClick = {}) {
             Icon(Icons.Default.Star, "Star")
         }
     }) {
-        ComicList(array = viewModel.list)
+        ComicList(list = viewModel.comicList, viewModel = viewModel)
     }
 }
 
@@ -179,11 +183,10 @@ fun Tab2() {
 }
 
 @Composable
-fun ComicList(array: List<String>) {
-    Log.d(TAG, "ComicList: $array")
-    LazyColumn(Modifier.fillMaxSize()) {
-        items(array) { item ->
-            Text(text = item)
+fun ComicList(list: List<XKCDComic>, viewModel: MainViewModel) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(list) { item ->
+            ComicCard(item, viewModel)
         }
     }
 }
@@ -192,11 +195,44 @@ fun ComicList(array: List<String>) {
 
 
 class MainViewModel : ViewModel() {
-    var list = mutableStateListOf("hi", "hello", "hallo")
+    var comicList = mutableStateListOf<XKCDComic>()
+    var imageLoadedMap = mutableStateMapOf<Int, Boolean>()
 
-    fun addToList(item: String) {
-        list.add(item)
-        Log.d(TAG, "addToList: $list")
+    lateinit var dateFormat: DateFormat
+
+    private fun addToComicList(item: XKCDComic) {
+        comicList.add(item)
+        comicList.sortByDescending { it.id }
     }
 
+    fun addComic(number: Int, context: Context) {
+        viewModelScope.launch {
+            imageLoadedMap[number] = false
+            XKCDComic.getComic(number = number, coroutineScope = viewModelScope, context = context, onImageLoaded = {imageLoadedMap[number] = true}) {
+                addToComicList(it)
+            }
+        }
+    }
+
+    private fun addComicSync(number: Int, context: Context) {
+        imageLoadedMap[number] = false
+        XKCDComic.getComic(number = number, coroutineScope = viewModelScope, context = context, onImageLoaded = {imageLoadedMap[number] = true}) {
+            addToComicList(it)
+        }
+    }
+
+    private fun onImageLoad() {
+
+    }
+
+    fun addLatestComics(count: Int, context: Context) {
+        viewModelScope.launch {
+            getHttpJSON("https://xkcd.com/info.0.json", context){
+                val number = it.getInt("num")
+                for (i in number downTo (number - (count - 1))) {
+                    addComicSync(i, context)
+                }
+            }
+        }
+    }
 }
