@@ -3,8 +3,10 @@ package de.mrpine.xkcdfeed
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.StrictMode
 import android.util.Log
+import androidx.core.graphics.set
 import com.android.volley.Request
 import com.android.volley.VolleyError
 import com.android.volley.toolbox.JsonObjectRequest
@@ -19,6 +21,7 @@ import java.util.*
 
 
 private const val TAG = "XKCDComic"
+
 class XKCDComic(
     val title: String,
     val imageURL: String,
@@ -36,26 +39,72 @@ class XKCDComic(
     init {
         coroutineScope.launch {
             bitmapLight = getBitmapFromURL(imageURL)
-            bitmapDark = bitmapLight
-            onImageLoaded()
+            bitmapDark = convertToDarkImage(bitmapLight, onImageLoaded)
         }
     }
 
+    private fun convertToDarkImage(lightBitmap: Bitmap?, onFinish: () -> Unit): Bitmap? {
+        if (lightBitmap == null) return null
+
+        val darkBitmap = lightBitmap.copy(lightBitmap.config, true)
+        for (y in 0 until darkBitmap.height) {
+            for (x in 0 until darkBitmap.width) {
+                val pixelColor = darkBitmap.getPixel(x, y)
+                val invertedPixelColor = Color.rgb(255 - Color.red(pixelColor), 255 - Color.green(pixelColor), 255 - Color.blue(pixelColor))
+                val hsv = FloatArray(3)
+                Color.colorToHSV(invertedPixelColor, hsv)
+                darkBitmap[x, y] = Color.HSVToColor(floatArrayOf((hsv[0] + 180) % 360, hsv[1], hsv[2]))
+            }
+        }
+        onFinish()
+        return darkBitmap
+    }
+
     companion object {
-        fun getComic(number: Int, context: Context, coroutineScope: CoroutineScope, onImageLoaded: () -> Unit, saveComic: (XKCDComic) -> Unit) {
-            getHttpJSON("https://xkcd.com/$number/info.0.json", context){ generateComic(it, coroutineScope, onImageLoaded, saveComic)}
+        fun getComic(
+            number: Int,
+            context: Context,
+            coroutineScope: CoroutineScope,
+            onImageLoaded: () -> Unit,
+            saveComic: (XKCDComic) -> Unit
+        ) {
+            getHttpJSON("https://xkcd.com/$number/info.0.json", context) {
+                generateComic(
+                    it,
+                    coroutineScope,
+                    onImageLoaded,
+                    saveComic
+                )
+            }
         }
 
-        private fun generateComic(jsonObject: JSONObject, coroutineScope: CoroutineScope, onImageLoaded: () -> Unit, saveComic: (XKCDComic) -> Unit) {
+        private fun generateComic(
+            jsonObject: JSONObject,
+            coroutineScope: CoroutineScope,
+            onImageLoaded: () -> Unit,
+            saveComic: (XKCDComic) -> Unit
+        ) {
             val title = jsonObject.getString("title")
             val imageURL = jsonObject.getString("img")
             val calendar = Calendar.getInstance()
             calendar.clear()
-            calendar.set(jsonObject.getInt("year"), jsonObject.getInt("month") - 1, jsonObject.getInt("day"))
+            calendar.set(
+                jsonObject.getInt("year"),
+                jsonObject.getInt("month") - 1,
+                jsonObject.getInt("day")
+            )
             Log.d(TAG, "getComic: $calendar")
             val description = jsonObject.getString("alt")
             val number = jsonObject.getInt("num")
-            val comic = XKCDComic(title = title, imageURL = imageURL, id = number, pubDate = calendar, description = description, coroutineScope = coroutineScope, onImageLoaded = onImageLoaded)
+            val comic = XKCDComic(
+                title = title,
+                imageURL = imageURL,
+                id = number,
+                pubDate = calendar,
+                description = description,
+                coroutineScope = coroutineScope,
+                onImageLoaded = onImageLoaded
+            )
             saveComic(comic)
         }
     }

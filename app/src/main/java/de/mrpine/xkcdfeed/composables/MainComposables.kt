@@ -221,10 +221,6 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    private fun onImageLoad() {
-
-    }
-
     fun addLatestComics(count: Int, context: Context) {
         viewModelScope.launch {
             getHttpJSON("https://xkcd.com/info.0.json", context){

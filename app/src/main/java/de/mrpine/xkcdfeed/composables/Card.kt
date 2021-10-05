@@ -8,7 +8,6 @@ import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -18,7 +17,6 @@ import de.mrpine.xkcdfeed.XKCDComic
 
 private const val TAG = "Card"
 
-@ExperimentalComposeUiApi
 @Composable
 fun ComicCard(xkcdComic: XKCDComic, viewModel: MainViewModel) {
     Card(modifier = Modifier.fillMaxWidth(), elevation = 5.dp) {

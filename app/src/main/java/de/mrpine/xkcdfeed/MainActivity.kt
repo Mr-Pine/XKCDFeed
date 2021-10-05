@@ -29,8 +29,10 @@ class MainActivity : ComponentActivity() {
 
             val viewModel: MainViewModel = viewModel()
             viewModel.dateFormat = DateFormat.getDateFormat(this)
-            if (viewModel.comicList.isEmpty())
+            if (viewModel.comicList.isEmpty()) {
+                viewModel.addComic(202, this)
                 viewModel.addLatestComics(4, this)
+            }
 
             XKCDFeedTheme {
                 NavHost(navController = navController, startDestination = "mainView") {
