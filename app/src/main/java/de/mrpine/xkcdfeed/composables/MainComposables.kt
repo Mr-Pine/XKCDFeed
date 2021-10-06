@@ -1,6 +1,7 @@
 package de.mrpine.xkcdfeed.composables
 
 import android.content.Context
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -102,7 +103,8 @@ fun TopAppBar() {
     return TopAppBar(
         title = { Text(text = "XKCDFeed") },
         contentColor = Color.White,
-        elevation = 0.dp
+        elevation = 0.dp,
+        backgroundColor = MaterialTheme.colors.primary
     )
 }
 //</editor-fold>
@@ -123,7 +125,8 @@ fun TabbedContent(viewModel: MainViewModel) {
                 TabRowDefaults.Indicator(
                     Modifier.pagerTabIndicatorOffset(tabPagerState, tabPositions)
                 )
-            }
+            },
+            backgroundColor = MaterialTheme.colors.primary
         ) {
             Tab(
                 text = { Text("lol 1") },
@@ -179,14 +182,19 @@ fun Tab1(viewModel: MainViewModel) {
 
 @Composable
 fun Tab2() {
-    Text(text = "tab2")
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.surface)){
+        Text(text = "tab2", modifier = Modifier.align(Alignment.Center))
+    }
 }
 
 @Composable
 fun ComicList(list: List<XKCDComic>, viewModel: MainViewModel) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.surface), contentPadding = PaddingValues(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(list) { item ->
-            ComicCard(item, viewModel)
+            ComicCard(item, viewModel.dateFormat, viewModel.imageLoadedMap)
         }
     }
 }

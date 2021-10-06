@@ -16,5 +16,5 @@ val Gray400Light = Color(0xFFefefef)
 val Gray400Dark = Color(0xFF8d8d8d)
 val Gray500Light = Color(0xFFcfcfcf)
 val Gray500Dark = Color(0xFF707070)
-val Gray900Light = Color(0xFF212121)
+val Gray900Light = Color(0xFF484848)
 val Gray900Dark = Color.Black
