@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -17,20 +19,50 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.mrpine.xkcdfeed.XKCDComic
+import de.mrpine.xkcdfeed.ui.theme.Amber500
 import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
 import java.text.DateFormat
 import java.util.*
 
 private const val TAG = "Card"
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun ComicCard(xkcdComic: XKCDComic, dateFormat: DateFormat, imageLoadedMap: MutableMap<Int, Boolean>) {
-    Card(modifier = Modifier.fillMaxWidth(), elevation = 5.dp, backgroundColor = if(MaterialTheme.colors.isLight) Color.White else Color.Black, shape = MaterialTheme.shapes.medium) {
+fun ComicCard(
+    xkcdComic: XKCDComic,
+    dateFormat: DateFormat,
+    imageLoadedMap: MutableMap<Int, Boolean>,
+    favoriteList: List<Int>,
+    setFavorite: (XKCDComic) -> Unit,
+    removeFavorite: (XKCDComic) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = 5.dp,
+        backgroundColor = if (MaterialTheme.colors.isLight) Color.White else Color.Black,
+        shape = MaterialTheme.shapes.medium,
+        onClick = {(if(!favoriteList.contains(xkcdComic.id)) setFavorite else removeFavorite)(xkcdComic)}
+    ) {
         MaterialTheme.colors.primarySurface
-        Column(modifier = Modifier.padding(8.dp)) {
-            Row(verticalAlignment = Alignment.Bottom){
-                Text(text = xkcdComic.title, fontWeight = FontWeight.Bold)
-                Text(text = "(${xkcdComic.id})", modifier = Modifier.padding(start = 4.dp, bottom = 1.5.dp), fontStyle = FontStyle.Italic, style = MaterialTheme.typography.caption)
+        Column(modifier = Modifier.padding(top = 4.dp, start = 8.dp, end = 8.dp, bottom = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 3.dp)) {
+                    Text(text = xkcdComic.title, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "(${xkcdComic.id})",
+                        modifier = Modifier.padding(start = 4.dp, bottom = 1.5.dp),
+                        fontStyle = FontStyle.Italic,
+                        style = MaterialTheme.typography.caption
+                    )
+                }
+                if(favoriteList.contains(xkcdComic.id)) {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Star, "Star", tint = Amber500)
+                    }
+                }
             }
             Text(
                 text = dateFormat.format(xkcdComic.pubDate.time),
@@ -50,25 +82,40 @@ fun ComicCard(xkcdComic: XKCDComic, dateFormat: DateFormat, imageLoadedMap: Muta
 
                 )
             } else {
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .background(color = MaterialTheme.colors.primary.copy(alpha = 0.5F))) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(color = MaterialTheme.colors.primary.copy(alpha = 0.5F))
+                ) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
             }
-            Text(text = xkcdComic.description, style = MaterialTheme.typography.caption, modifier = Modifier.padding(top = 8.dp))
+            Text(
+                text = xkcdComic.description,
+                style = MaterialTheme.typography.caption,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }
 
 @Preview("Preview Card")
 @Composable
-fun PreviewCard(){
+fun PreviewCard() {
     val cal = Calendar.getInstance()
     cal.set(2021, 9, 4)
     XKCDFeedTheme(darkTheme = false) {
-        ComicCard(xkcdComic = XKCDComic("Comet Visitor", "https://imgs.xkcd.com/comics/comet_visitor.png", 2524, cal, "this is a description I am too lazy to copy", rememberCoroutineScope(), {}), DateFormat.getDateInstance(), mutableMapOf())
+        ComicCard(
+            xkcdComic = XKCDComic(
+                "Comet Visitor",
+                "https://imgs.xkcd.com/comics/comet_visitor.png",
+                2524,
+                cal,
+                "this is a description I am too lazy to copy",
+                rememberCoroutineScope(),
+                {}), DateFormat.getDateInstance(), mutableMapOf(), listOf(2524), {}, {}
+        )
     }
 }
 

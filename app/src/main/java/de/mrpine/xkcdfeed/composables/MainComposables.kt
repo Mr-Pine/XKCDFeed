@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -154,7 +155,7 @@ fun TabContent(
 ) {
     when (pageIndex) {
         0 -> Tab1(viewModel)
-        1 -> Tab2()
+        1 -> Tab2(viewModel)
         else -> Text(text = "error occurred")
     }
 }
@@ -171,25 +172,34 @@ fun Tab1(viewModel: MainViewModel) {
             Icon(Icons.Default.Star, "Star")
         }
     }) {
-        ComicList(list = viewModel.comicList, viewModel = viewModel)
+        ComicList(list = viewModel.latestComicsList, imagesLoadedMap = viewModel.latestImagesLoadedMap, viewModel = viewModel)
     }
+
 }
 
 @Composable
-fun Tab2() {
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.surface)){
-        Text(text = "tab2", modifier = Modifier.align(Alignment.Center))
-    }
+fun Tab2(viewModel: MainViewModel) {
+    ComicList(list = viewModel.favoriteComicsList, imagesLoadedMap = viewModel.favoriteImagesLoadedMap, viewModel = viewModel)
 }
 
 @Composable
-fun ComicList(list: List<XKCDComic>, viewModel: MainViewModel) {
+fun ComicList(list: List<XKCDComic>, imagesLoadedMap: MutableMap<Int, Boolean>, viewModel: MainViewModel) {
     LazyColumn(
         Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colors.surface), contentPadding = PaddingValues(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            .background(MaterialTheme.colors.surface),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         items(list) { item ->
-            ComicCard(item, viewModel.dateFormat, viewModel.imageLoadedMap)
+            ComicCard(
+                item,
+                viewModel.dateFormat,
+                imagesLoadedMap,
+                viewModel.favoriteListFlow.collectAsState(initial = mutableListOf()).value,
+                viewModel::addFavorite,
+                viewModel::removeFavorite
+            )
         }
     }
 }

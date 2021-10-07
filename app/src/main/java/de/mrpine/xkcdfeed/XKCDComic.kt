@@ -93,7 +93,6 @@ class XKCDComic(
                 jsonObject.getInt("month") - 1,
                 jsonObject.getInt("day")
             )
-            Log.d(TAG, "getComic: $calendar")
             val description = jsonObject.getString("alt")
             val number = jsonObject.getInt("num")
             val comic = XKCDComic(
