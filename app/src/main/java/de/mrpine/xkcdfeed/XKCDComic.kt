@@ -57,6 +57,7 @@ class XKCDComic(
             }
         }
         onFinish()
+        Log.d(TAG, "convertToDarkImage: $id")
         return darkBitmap
     }
 

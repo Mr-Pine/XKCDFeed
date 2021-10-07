@@ -1,5 +1,6 @@
 package de.mrpine.xkcdfeed.composables
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -168,7 +169,7 @@ private const val TAG = "mainComposable"
 fun Tab1(viewModel: MainViewModel) {
 
     Scaffold(floatingActionButton = {
-        FloatingActionButton(onClick = {}) {
+        FloatingActionButton(onClick = { Log.d(TAG, "Tab1: ${viewModel.favoriteImagesLoadedMap.keys}")}) {
             Icon(Icons.Default.Star, "Star")
         }
     }) {

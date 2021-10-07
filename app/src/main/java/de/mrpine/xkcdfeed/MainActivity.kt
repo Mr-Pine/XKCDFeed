@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
@@ -29,8 +30,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         setContent {
+            val scope = rememberCoroutineScope()
             val navController = rememberNavController()
 
             val viewModel: MainViewModel = ViewModelProvider(this, MainViewModelFactory(userDataStore)).get(MainViewModel::class.java)
@@ -38,6 +39,13 @@ class MainActivity : ComponentActivity() {
             viewModel.dateFormat = DateFormat.getDateFormat(this)
             if (viewModel.latestComicsList.isEmpty()) {
                 viewModel.addLatestComics(4, this)
+
+                /*scope.launch {
+                    val favList = viewModel.favoriteListFlow.first()
+                    for(i in favList){
+                        viewModel.addComic(i, this@MainActivity, MainViewModel.Tab.FAVORITES)
+                    }
+                }*/
             }
 
             XKCDFeedTheme {

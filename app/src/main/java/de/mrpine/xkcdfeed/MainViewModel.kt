@@ -95,14 +95,14 @@ class MainViewModel(private val userDataStore: DataStore<Preferences>) : ViewMod
         latestComicsList.sortByDescending { it.id }
     }
 
-    private fun addToFavoriteComicList(item: XKCDComic, imageLoaded: Boolean = false) {
+    private fun addToFavoriteComicList(item: XKCDComic, imageLoaded: Boolean? = null) {
         favoriteComicsList.add(item)
-        favoriteImagesLoadedMap[item.id] = imageLoaded
+        if(imageLoaded != null) favoriteImagesLoadedMap[item.id] = imageLoaded
         favoriteComicsList.sortByDescending { it.id }
     }
 
     private fun removeFromFavoriteComicList(item: XKCDComic) {
-        favoriteComicsList.remove(item)
+        favoriteComicsList.remove(favoriteComicsList.find { it.id == item.id })
         favoriteImagesLoadedMap.remove(item.id)
         favoriteComicsList.sortByDescending { it.id }
     }
