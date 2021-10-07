@@ -1,6 +1,5 @@
 package de.mrpine.xkcdfeed.composables
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,20 +10,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.google.accompanist.pager.*
+import de.mrpine.xkcdfeed.MainViewModel
 import de.mrpine.xkcdfeed.XKCDComic
-import de.mrpine.xkcdfeed.getHttpJSON
 import kotlinx.coroutines.launch
-import java.text.DateFormat
 
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
@@ -98,6 +92,7 @@ fun MainScaffold(viewModel: MainViewModel) {
     }
 }
 
+
 @Composable
 fun TopAppBar() {
     return TopAppBar(
@@ -118,7 +113,7 @@ fun TabbedContent(viewModel: MainViewModel) {
     val tabPagerState = rememberPagerState(0)
     val scope = rememberCoroutineScope()
 
-    Column {
+    Column() {
         TabRow(
             selectedTabIndex = tabPagerState.currentPage,
             indicator = { tabPositions ->
@@ -129,14 +124,14 @@ fun TabbedContent(viewModel: MainViewModel) {
             backgroundColor = MaterialTheme.colors.primary
         ) {
             Tab(
-                text = { Text("lol 1") },
+                text = { Text("Latest") },
                 selected = tabPagerState.currentPage == 0,
                 onClick = { scope.launch { tabPagerState.animateScrollToPage(0) } },
                 selectedContentColor = Color(0xFFFFFFFF),
                 unselectedContentColor = Color(0x80FFFFFF)
             )
             Tab(
-                text = { Text("lol 2") },
+                text = { Text("Favorites") },
                 selected = tabPagerState.currentPage == 1,
                 onClick = { scope.launch { tabPagerState.animateScrollToPage(1) } },
                 selectedContentColor = Color(0xFFFFFFFF),
@@ -200,43 +195,3 @@ fun ComicList(list: List<XKCDComic>, viewModel: MainViewModel) {
 }
 //</editor-fold>
 //</editor-fold>
-
-
-class MainViewModel : ViewModel() {
-    var comicList = mutableStateListOf<XKCDComic>()
-    var imageLoadedMap = mutableStateMapOf<Int, Boolean>()
-
-    lateinit var dateFormat: DateFormat
-
-    private fun addToComicList(item: XKCDComic) {
-        comicList.add(item)
-        comicList.sortByDescending { it.id }
-    }
-
-    fun addComic(number: Int, context: Context) {
-        viewModelScope.launch {
-            imageLoadedMap[number] = false
-            XKCDComic.getComic(number = number, coroutineScope = viewModelScope, context = context, onImageLoaded = {imageLoadedMap[number] = true}) {
-                addToComicList(it)
-            }
-        }
-    }
-
-    private fun addComicSync(number: Int, context: Context) {
-        imageLoadedMap[number] = false
-        XKCDComic.getComic(number = number, coroutineScope = viewModelScope, context = context, onImageLoaded = {imageLoadedMap[number] = true}) {
-            addToComicList(it)
-        }
-    }
-
-    fun addLatestComics(count: Int, context: Context) {
-        viewModelScope.launch {
-            getHttpJSON("https://xkcd.com/info.0.json", context){
-                val number = it.getInt("num")
-                for (i in number downTo (number - (count - 1))) {
-                    addComicSync(i, context)
-                }
-            }
-        }
-    }
-}
