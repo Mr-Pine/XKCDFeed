@@ -1,8 +1,13 @@
 package de.mrpine.xkcdfeed
 
 import android.content.Context
+import android.content.Intent
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.ModalBottomSheetState
+import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -16,13 +21,35 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import java.text.DateFormat
 
-class MainViewModel(private val userDataStore: DataStore<Preferences>) : ViewModel() {
+
+class MainViewModel(
+    private val userDataStore: DataStore<Preferences>,
+    val startActivity: (Intent) -> Unit
+) : ViewModel() {
     private val TAG = "MainViewModel"
     var latestComicsList = mutableStateListOf<XKCDComic>()
-    var latestImagesLoadedMap = mutableStateMapOf<Int, Boolean>()
 
+    var latestImagesLoadedMap = mutableStateMapOf<Int, Boolean>()
     var favoriteComicsList = mutableStateListOf<XKCDComic>()
+
     var favoriteImagesLoadedMap = mutableStateMapOf<Int, Boolean>()
+
+
+    @ExperimentalMaterialApi
+    var modalBottomSheetState = ModalBottomSheetState(ModalBottomSheetValue.Hidden)
+    var currentBottomSheetXKCDComic = mutableStateOf<XKCDComic?>(null)
+
+    @ExperimentalMaterialApi
+    suspend fun showBottomSheet(xkcdComic: XKCDComic) {
+        modalBottomSheetState.show()
+        currentBottomSheetXKCDComic.value = xkcdComic
+    }
+
+    @ExperimentalMaterialApi
+    suspend fun hideBottomSheet() {
+        modalBottomSheetState.hide()
+        currentBottomSheetXKCDComic.value = null
+    }
 
     private val FAVORITE_LIST = stringPreferencesKey("favorite_list")
     val favoriteListFlow: Flow<List<Int>> = userDataStore.data.map { preferences ->
@@ -40,14 +67,14 @@ class MainViewModel(private val userDataStore: DataStore<Preferences>) : ViewMod
         }
     }
 
-    fun addFavorite(xkcdComic: XKCDComic, imageLoaded: Boolean = true){
+    fun addFavorite(xkcdComic: XKCDComic, imageLoaded: Boolean = true) {
         viewModelScope.launch {
             addToFavoriteList(xkcdComic.id)
             addToFavoriteComicList(xkcdComic, imageLoaded)
         }
     }
 
-    fun removeFavorite(xkcdComic: XKCDComic){
+    fun removeFavorite(xkcdComic: XKCDComic) {
         viewModelScope.launch {
             removeFromFavoriteList(xkcdComic.id)
             removeFromFavoriteComicList(xkcdComic)
@@ -97,7 +124,7 @@ class MainViewModel(private val userDataStore: DataStore<Preferences>) : ViewMod
 
     private fun addToFavoriteComicList(item: XKCDComic, imageLoaded: Boolean? = null) {
         favoriteComicsList.add(item)
-        if(imageLoaded != null) favoriteImagesLoadedMap[item.id] = imageLoaded
+        if (imageLoaded != null) favoriteImagesLoadedMap[item.id] = imageLoaded
         favoriteComicsList.sortByDescending { it.id }
     }
 
@@ -135,7 +162,7 @@ class MainViewModel(private val userDataStore: DataStore<Preferences>) : ViewMod
         viewModelScope.launch {
             getHttpJSON("https://xkcd.com/info.0.json", context) {
                 val number = it.getInt("num")
-                for (i in number downTo (number - count)) {
+                for (i in number downTo (number - (count - 1))) {
                     addComicSync(i, context, Tab.LATEST)
                 }
             }
@@ -148,13 +175,16 @@ class MainViewModel(private val userDataStore: DataStore<Preferences>) : ViewMod
 }
 
 
-class MainViewModelFactory(private val userDataStore: DataStore<Preferences>) :
+class MainViewModelFactory(
+    private val userDataStore: DataStore<Preferences>,
+    private val startActivity: (Intent) -> Unit
+) :
     ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(userDataStore) as T
+            return MainViewModel(userDataStore, startActivity) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

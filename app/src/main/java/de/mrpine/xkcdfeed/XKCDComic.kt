@@ -127,6 +127,7 @@ fun getHttpJSON(
     val jsonObjectRequest = JsonObjectRequest(
         Request.Method.GET, getURL, null,
         { response ->
+            Log.d(TAG, "getHttpJSON: ${response.getInt("num")}")
             returnFunction(response)
         },
         { error ->

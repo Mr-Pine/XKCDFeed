@@ -18,6 +18,8 @@ import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import de.mrpine.xkcdfeed.composables.MainContent
 import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 private const val TAG = "MainActivity"
 
@@ -34,18 +36,18 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val navController = rememberNavController()
 
-            val viewModel: MainViewModel = ViewModelProvider(this, MainViewModelFactory(userDataStore)).get(MainViewModel::class.java)
+            val viewModel: MainViewModel = ViewModelProvider(this, MainViewModelFactory(userDataStore, this::startActivity)).get(MainViewModel::class.java)
 
             viewModel.dateFormat = DateFormat.getDateFormat(this)
             if (viewModel.latestComicsList.isEmpty()) {
                 viewModel.addLatestComics(4, this)
 
-                /*scope.launch {
+                scope.launch {
                     val favList = viewModel.favoriteListFlow.first()
                     for(i in favList){
                         viewModel.addComic(i, this@MainActivity, MainViewModel.Tab.FAVORITES)
                     }
-                }*/
+                }
             }
 
             XKCDFeedTheme {

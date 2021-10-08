@@ -1,11 +1,11 @@
 package de.mrpine.xkcdfeed.composables
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -20,13 +20,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.mrpine.xkcdfeed.XKCDComic
 import de.mrpine.xkcdfeed.ui.theme.Amber500
+import de.mrpine.xkcdfeed.ui.theme.Gray400
 import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
+import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.*
 
 private const val TAG = "Card"
 
-@OptIn(ExperimentalMaterialApi::class)
+
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ComicCard(
     xkcdComic: XKCDComic,
@@ -34,14 +37,17 @@ fun ComicCard(
     imageLoadedMap: MutableMap<Int, Boolean>,
     favoriteList: List<Int>,
     setFavorite: (XKCDComic) -> Unit,
-    removeFavorite: (XKCDComic) -> Unit
+    removeFavorite: (XKCDComic) -> Unit,
+    onLongPress: suspend (XKCDComic) -> Unit
 ) {
+    val scope = rememberCoroutineScope()
     Card(
-        modifier = Modifier.fillMaxWidth(),
         elevation = 5.dp,
         backgroundColor = if (MaterialTheme.colors.isLight) Color.White else Color.Black,
         shape = MaterialTheme.shapes.medium,
-        onClick = {(if(!favoriteList.contains(xkcdComic.id)) setFavorite else removeFavorite)(xkcdComic)}
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(onLongClick = { scope.launch { onLongPress(xkcdComic) } }) {}
     ) {
         MaterialTheme.colors.primarySurface
         Column(modifier = Modifier.padding(top = 4.dp, start = 8.dp, end = 8.dp, bottom = 8.dp)) {
@@ -55,13 +61,27 @@ fun ComicCard(
                         style = MaterialTheme.typography.caption
                     )
                 }
-                if(favoriteList.contains(xkcdComic.id)) {
-                    Column(
-                        horizontalAlignment = Alignment.End,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Star, "Star", tint = Amber500)
+
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    var icon = Icons.Outlined.StarOutline
+                    var tint = Gray400
+
+                    if (favoriteList.contains(xkcdComic.id)) {
+                        icon = Icons.Filled.Star
+                        tint = Amber500
                     }
+                    Icon(
+                        icon,
+                        "Star",
+                        tint = tint,
+                        modifier = Modifier.clickable {
+                            (if (!favoriteList.contains(xkcdComic.id)) setFavorite else removeFavorite)(
+                                xkcdComic
+                            )
+                        })
                 }
             }
             Text(
@@ -114,7 +134,7 @@ fun PreviewCard() {
                 cal,
                 "this is a description I am too lazy to copy",
                 rememberCoroutineScope(),
-                {}), DateFormat.getDateInstance(), mutableMapOf(), listOf(2524), {}, {}
+                {}), DateFormat.getDateInstance(), mutableMapOf(), listOf(2523), {}, {}, {}
         )
     }
 }

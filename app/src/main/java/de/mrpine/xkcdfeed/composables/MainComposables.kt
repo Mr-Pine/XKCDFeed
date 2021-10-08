@@ -1,7 +1,9 @@
 package de.mrpine.xkcdfeed.composables
 
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,6 +12,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -20,16 +23,19 @@ import androidx.compose.ui.unit.dp
 import com.google.accompanist.pager.*
 import de.mrpine.xkcdfeed.MainViewModel
 import de.mrpine.xkcdfeed.XKCDComic
+import de.mrpine.xkcdfeed.ui.theme.Amber500
+import de.mrpine.xkcdfeed.ui.theme.Gray400
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
 fun MainContent(viewModel: MainViewModel) { //navRoute = mainView
-    val favSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+    val favSheetState = viewModel.modalBottomSheetState
     val scope = rememberCoroutineScope()
 
-    SheetLayout(favSheetState, viewModel)
+    SheetLayout(favSheetState, viewModel, scope)
 }
 
 
@@ -37,9 +43,38 @@ fun MainContent(viewModel: MainViewModel) { //navRoute = mainView
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun SheetLayout(state: ModalBottomSheetState, viewModel: MainViewModel) {
+fun SheetLayout(state: ModalBottomSheetState, viewModel: MainViewModel, scope: CoroutineScope) {
+    val favoriteList = viewModel.favoriteListFlow.collectAsState(initial = listOf()).value
+    val currentComic = viewModel.currentBottomSheetXKCDComic.value
+    val isFav = if (currentComic != null) favoriteList.contains(currentComic.id) else false
     ModalBottomSheetLayout(
-        sheetContent = sheetContent(),
+        sheetContent = sheetContent(
+            currentComic = currentComic,
+            isFav = isFav,
+            onClickFav = {
+                scope.launch {
+                    if (currentComic != null) {
+                        if (!favoriteList.contains(currentComic.id)) viewModel.addFavorite(
+                            currentComic
+                        ) else viewModel.removeFavorite(currentComic)
+                    }
+                    viewModel.hideBottomSheet()
+                }
+            },
+            onClickShare = {
+                scope.launch {
+                    if (currentComic != null) {
+                        val sendIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_TEXT, "https://xkcd.com/${currentComic.id}")
+                            type = "text/plain"
+                        }
+                        val shareIntent = Intent.createChooser(sendIntent, null)
+                        viewModel.startActivity(shareIntent)
+                    }
+                    viewModel.hideBottomSheet()
+                }
+            }),
         sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
         sheetState = state,
         scrimColor = MaterialTheme.colors.primaryVariant.copy(alpha = 0.7f)
@@ -49,24 +84,58 @@ fun SheetLayout(state: ModalBottomSheetState, viewModel: MainViewModel) {
 }
 
 @Composable
-fun sheetContent(): @Composable (ColumnScope.() -> Unit) {
+fun sheetContent(
+    isFav: Boolean,
+    onClickFav: (xkcdComic: XKCDComic) -> Unit,
+    onClickShare: (xkcdComic: XKCDComic) -> Unit,
+    currentComic: XKCDComic?
+): @Composable (ColumnScope.() -> Unit) {
     return {
         Surface(modifier = Modifier.padding(8.dp)) {
             Column {
                 val iconDimensions = 30.dp
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable(onClick = {
+                            if (currentComic != null) {
+                                onClickFav(currentComic)
+                            }
+                        })
+                        .fillMaxWidth()
+                ) {
                     Surface(
                         modifier = Modifier
                             .width(iconDimensions)
                             .height(iconDimensions)
                             .padding(end = 6.dp)
                     ) {
-                        Icon(Icons.Default.Star, "Star")
+                        var icon = Icons.Outlined.StarOutline
+                        var tint = Gray400
+
+                        if (isFav) {
+                            icon = Icons.Filled.Star
+                            tint = Amber500
+                        }
+                        Icon(
+                            icon,
+                            "Star",
+                            tint = tint
+                        )
                     }
                     Text("Fav")
                 }
                 Divider(modifier = Modifier.padding(vertical = 4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable(onClick = {
+                            if (currentComic != null) {
+                                onClickShare(currentComic)
+                            }
+                        })
+                        .fillMaxWidth()
+                ) {
                     Surface(
                         modifier = Modifier
                             .width(iconDimensions)
@@ -165,26 +234,46 @@ fun TabContent(
 private const val TAG = "mainComposable"
 
 //<editor-fold desc="Tab Pages">
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun Tab1(viewModel: MainViewModel) {
 
     Scaffold(floatingActionButton = {
-        FloatingActionButton(onClick = { Log.d(TAG, "Tab1: ${viewModel.favoriteImagesLoadedMap.keys}")}) {
+        FloatingActionButton(onClick = {
+            Log.d(
+                TAG,
+                "Tab1: ${viewModel.favoriteImagesLoadedMap.keys}"
+            )
+        }) {
             Icon(Icons.Default.Star, "Star")
         }
     }) {
-        ComicList(list = viewModel.latestComicsList, imagesLoadedMap = viewModel.latestImagesLoadedMap, viewModel = viewModel)
+        ComicList(
+            list = viewModel.latestComicsList,
+            imagesLoadedMap = viewModel.latestImagesLoadedMap,
+            viewModel = viewModel
+        )
     }
 
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun Tab2(viewModel: MainViewModel) {
-    ComicList(list = viewModel.favoriteComicsList, imagesLoadedMap = viewModel.favoriteImagesLoadedMap, viewModel = viewModel)
+    ComicList(
+        list = viewModel.favoriteComicsList,
+        imagesLoadedMap = viewModel.favoriteImagesLoadedMap,
+        viewModel = viewModel
+    )
 }
 
+@ExperimentalMaterialApi
 @Composable
-fun ComicList(list: List<XKCDComic>, imagesLoadedMap: MutableMap<Int, Boolean>, viewModel: MainViewModel) {
+fun ComicList(
+    list: List<XKCDComic>,
+    imagesLoadedMap: MutableMap<Int, Boolean>,
+    viewModel: MainViewModel
+) {
     LazyColumn(
         Modifier
             .fillMaxSize()
@@ -199,7 +288,8 @@ fun ComicList(list: List<XKCDComic>, imagesLoadedMap: MutableMap<Int, Boolean>, 
                 imagesLoadedMap,
                 viewModel.favoriteListFlow.collectAsState(initial = mutableListOf()).value,
                 viewModel::addFavorite,
-                viewModel::removeFavorite
+                viewModel::removeFavorite,
+                viewModel::showBottomSheet
             )
         }
     }
