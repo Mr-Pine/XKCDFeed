@@ -2,6 +2,7 @@ package de.mrpine.xkcdfeed
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.ModalBottomSheetValue
@@ -28,13 +29,6 @@ class MainViewModel(
     val startActivity: (Intent) -> Unit
 ) : ViewModel() {
     private val TAG = "MainViewModel"
-    var latestComicsList = mutableStateListOf<XKCDComic>()
-
-    var latestImagesLoadedMap = mutableStateMapOf<Int, Boolean>()
-    var favoriteComicsList = mutableStateListOf<XKCDComic>()
-
-    var favoriteImagesLoadedMap = mutableStateMapOf<Int, Boolean>()
-
 
     //<editor-fold desc="BottomSheet State">
     @ExperimentalMaterialApi
@@ -127,6 +121,12 @@ class MainViewModel(
 
 
     //<editor-fold desc="Functions to add and remove Comics to/from the lists">
+    var latestComicsList = mutableStateListOf<XKCDComic>()
+    var latestImagesLoadedMap = mutableStateMapOf<Int, Boolean>()
+
+    var favoriteComicsList = mutableStateListOf<XKCDComic>()
+    var favoriteImagesLoadedMap = mutableStateMapOf<Int, Boolean>()
+
     private fun addToLatestComicList(item: XKCDComic) {
         latestComicsList.add(item)
         latestComicsList.sortByDescending { it.id }
@@ -185,6 +185,12 @@ class MainViewModel(
         }
     }
     //</editor-fold>
+
+    val favListState: LazyListState = LazyListState()
+
+    suspend fun scrollToFavItem(index: Int){
+            favListState.animateScrollToItem(index = index)
+    }
 
     enum class Tab {
         LATEST, FAVORITES

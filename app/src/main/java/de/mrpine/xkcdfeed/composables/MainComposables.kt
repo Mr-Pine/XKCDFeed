@@ -6,11 +6,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.Composable
@@ -27,6 +30,7 @@ import de.mrpine.xkcdfeed.ui.theme.Amber500
 import de.mrpine.xkcdfeed.ui.theme.Gray400
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
@@ -210,7 +214,7 @@ fun TabbedContent(viewModel: MainViewModel) {
             )
         }
         HorizontalPager(count = 2, state = tabPagerState) { page ->
-            TabContent(pagerState = tabPagerState, pagerScope = this, page, viewModel)
+            TabContent(pagerState = tabPagerState, pagerScope = this, page, viewModel, scope = scope)
         }
     }
 }
@@ -221,11 +225,12 @@ fun TabContent(
     pagerState: PagerState,
     pagerScope: PagerScope,
     pageIndex: Int,
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    scope: CoroutineScope
 ) {
     when (pageIndex) {
         0 -> Tab1(viewModel)
-        1 -> Tab2(viewModel)
+        1 -> Tab2(viewModel, scope)
         else -> Text(text = "error occurred")
     }
 }
@@ -259,12 +264,24 @@ fun Tab1(viewModel: MainViewModel) {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun Tab2(viewModel: MainViewModel) {
-    ComicList(
-        list = viewModel.favoriteComicsList,
-        imagesLoadedMap = viewModel.favoriteImagesLoadedMap,
-        viewModel = viewModel
-    )
+fun Tab2(viewModel: MainViewModel, scope: CoroutineScope) {
+    Scaffold(floatingActionButton = {
+        FloatingActionButton(onClick = {
+            val randomIndex = Random.nextInt(viewModel.favListState.layoutInfo.totalItemsCount)
+            scope.launch {
+                viewModel.scrollToFavItem(randomIndex)
+            }
+        }) {
+            Icon(Icons.Default.Shuffle, "Star")
+        }
+    }) {
+        ComicList(
+            list = viewModel.favoriteComicsList,
+            imagesLoadedMap = viewModel.favoriteImagesLoadedMap,
+            viewModel = viewModel,
+            viewModel.favListState
+        )
+    }
 }
 
 @ExperimentalMaterialApi
@@ -272,14 +289,16 @@ fun Tab2(viewModel: MainViewModel) {
 fun ComicList(
     list: List<XKCDComic>,
     imagesLoadedMap: MutableMap<Int, Boolean>,
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    state: LazyListState? = null
 ) {
     LazyColumn(
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colors.surface),
         contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        state = state ?: rememberLazyListState()
     ) {
         items(list) { item ->
             ComicCard(
