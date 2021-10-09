@@ -24,6 +24,7 @@ import java.text.DateFormat
 
 class MainViewModel(
     private val userDataStore: DataStore<Preferences>,
+    val dateFormat: DateFormat,
     val startActivity: (Intent) -> Unit
 ) : ViewModel() {
     private val TAG = "MainViewModel"
@@ -35,6 +36,7 @@ class MainViewModel(
     var favoriteImagesLoadedMap = mutableStateMapOf<Int, Boolean>()
 
 
+    //<editor-fold desc="BottomSheet State">
     @ExperimentalMaterialApi
     var modalBottomSheetState = ModalBottomSheetState(ModalBottomSheetValue.Hidden)
     var currentBottomSheetXKCDComic = mutableStateOf<XKCDComic?>(null)
@@ -50,7 +52,10 @@ class MainViewModel(
         modalBottomSheetState.hide()
         currentBottomSheetXKCDComic.value = null
     }
+    //</editor-fold>
 
+
+    //<editor-fold desc="Favorite List">
     private val FAVORITE_LIST = stringPreferencesKey("favorite_list")
     val favoriteListFlow: Flow<List<Int>> = userDataStore.data.map { preferences ->
         // No type safety.
@@ -67,17 +72,13 @@ class MainViewModel(
         }
     }
 
-    fun addFavorite(xkcdComic: XKCDComic, imageLoaded: Boolean = true) {
-        viewModelScope.launch {
-            addToFavoriteList(xkcdComic.id)
-            addToFavoriteComicList(xkcdComic, imageLoaded)
-        }
-    }
-
-    fun removeFavorite(xkcdComic: XKCDComic) {
-        viewModelScope.launch {
-            removeFromFavoriteList(xkcdComic.id)
-            removeFromFavoriteComicList(xkcdComic)
+    private suspend fun addToFavoriteList(id: Int) {
+        userDataStore.edit { mutablePreferences ->
+            val stringList = mutablePreferences[FAVORITE_LIST] ?: "[]"
+            val mutableList = generateListFromJSON(stringList)
+            mutableList.add(id)
+            mutablePreferences[FAVORITE_LIST] =
+                JSONArray(mutableList.toTypedArray()).toString()
         }
     }
 
@@ -89,16 +90,7 @@ class MainViewModel(
         }
     }
 
-    private suspend fun addToFavoriteList(id: Int) {
-        userDataStore.edit { mutablePreferences ->
-            val stringList = mutablePreferences[FAVORITE_LIST] ?: "[]"
-            val mutableList = generateListFromJSON(stringList)
-            mutableList.add(id)
-            mutablePreferences[FAVORITE_LIST] =
-                JSONArray(mutableList.toTypedArray()).toString()
-        }
-    }
-
+    //Helper to parse string stored in DataStore
     private fun generateListFromJSON(
         listString: String,
         condition: (Int, MutableList<Int>) -> Boolean = { value, list ->
@@ -114,9 +106,27 @@ class MainViewModel(
         }
         return mutableList
     }
+    //</editor-fold>
 
-    lateinit var dateFormat: DateFormat
 
+    //<editor-fold desc="Functions to add or delete a comic to/from the favorites">
+    fun addFavorite(xkcdComic: XKCDComic, imageLoaded: Boolean = true) {
+        viewModelScope.launch {
+            addToFavoriteList(xkcdComic.id)
+            addToFavoriteComicList(xkcdComic, imageLoaded)
+        }
+    }
+
+    fun removeFavorite(xkcdComic: XKCDComic) {
+        viewModelScope.launch {
+            removeFromFavoriteList(xkcdComic.id)
+            removeFromFavoriteComicList(xkcdComic)
+        }
+    }
+    //</editor-fold>
+
+
+    //<editor-fold desc="Functions to add and remove Comics to/from the lists">
     private fun addToLatestComicList(item: XKCDComic) {
         latestComicsList.add(item)
         latestComicsList.sortByDescending { it.id }
@@ -133,7 +143,10 @@ class MainViewModel(
         favoriteImagesLoadedMap.remove(item.id)
         favoriteComicsList.sortByDescending { it.id }
     }
+    //</editor-fold>
 
+
+    //<editor-fold desc="Functions to generate new comics and add them to their lists">
     fun addComic(number: Int, context: Context, to: Tab) {
         viewModelScope.launch {
             addComicSync(number, context, to)
@@ -157,7 +170,10 @@ class MainViewModel(
             }
         }
     }
+    //</editor-fold>
 
+
+    //<editor-fold desc="Helper function to load all latest comics into the list">
     fun addLatestComics(count: Int, context: Context) {
         viewModelScope.launch {
             getHttpJSON("https://xkcd.com/info.0.json", context) {
@@ -168,6 +184,7 @@ class MainViewModel(
             }
         }
     }
+    //</editor-fold>
 
     enum class Tab {
         LATEST, FAVORITES
@@ -177,6 +194,7 @@ class MainViewModel(
 
 class MainViewModelFactory(
     private val userDataStore: DataStore<Preferences>,
+    private val dateFormat: DateFormat,
     private val startActivity: (Intent) -> Unit
 ) :
     ViewModelProvider.Factory {
@@ -184,7 +202,7 @@ class MainViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(userDataStore, startActivity) as T
+            return MainViewModel(userDataStore, dateFormat, startActivity) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

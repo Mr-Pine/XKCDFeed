@@ -36,9 +36,8 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val navController = rememberNavController()
 
-            val viewModel: MainViewModel = ViewModelProvider(this, MainViewModelFactory(userDataStore, this::startActivity)).get(MainViewModel::class.java)
+            val viewModel: MainViewModel = ViewModelProvider(this, MainViewModelFactory(userDataStore, DateFormat.getDateFormat(this), this::startActivity)).get(MainViewModel::class.java)
 
-            viewModel.dateFormat = DateFormat.getDateFormat(this)
             if (viewModel.latestComicsList.isEmpty()) {
                 viewModel.addLatestComics(4, this)
 
