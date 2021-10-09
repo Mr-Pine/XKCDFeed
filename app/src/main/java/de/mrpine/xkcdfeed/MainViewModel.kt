@@ -26,7 +26,8 @@ import java.text.DateFormat
 class MainViewModel(
     private val userDataStore: DataStore<Preferences>,
     val dateFormat: DateFormat,
-    val startActivity: (Intent) -> Unit
+    val startActivity: (Intent) -> Unit,
+    val navigateTo: (String) -> Unit
 ) : ViewModel() {
     private val TAG = "MainViewModel"
 
@@ -186,11 +187,13 @@ class MainViewModel(
     }
     //</editor-fold>
 
+    //<editor-fold desc="Fav List State">
     val favListState: LazyListState = LazyListState()
 
     suspend fun scrollToFavItem(index: Int){
             favListState.animateScrollToItem(index = index)
     }
+    //</editor-fold>
 
     enum class Tab {
         LATEST, FAVORITES
@@ -201,14 +204,15 @@ class MainViewModel(
 class MainViewModelFactory(
     private val userDataStore: DataStore<Preferences>,
     private val dateFormat: DateFormat,
-    private val startActivity: (Intent) -> Unit
+    private val startActivity: (Intent) -> Unit,
+    private val navigateTo: (String) -> Unit
 ) :
     ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(userDataStore, dateFormat, startActivity) as T
+            return MainViewModel(userDataStore, dateFormat, startActivity, navigateTo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

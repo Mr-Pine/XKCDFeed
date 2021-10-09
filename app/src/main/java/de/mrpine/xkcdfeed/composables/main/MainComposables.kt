@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed.composables
+package de.mrpine.xkcdfeed.composables.main
 
 import android.content.Intent
 import android.util.Log
@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Star
@@ -249,8 +250,9 @@ fun Tab1(viewModel: MainViewModel) {
                 TAG,
                 "Tab1: ${viewModel.favoriteImagesLoadedMap.keys}"
             )
+            viewModel.navigateTo("singleView/${2525}")
         }) {
-            Icon(Icons.Default.Star, "Star")
+            Icon(Icons.Default.History, "Star")
         }
     }) {
         ComicList(

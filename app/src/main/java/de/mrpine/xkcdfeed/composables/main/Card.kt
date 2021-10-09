@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed.composables
+package de.mrpine.xkcdfeed.composables.main
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -134,7 +134,11 @@ fun PreviewCard() {
                 cal,
                 "this is a description I am too lazy to copy",
                 rememberCoroutineScope(),
-                {}), DateFormat.getDateInstance(), mutableMapOf(), listOf(2523), {}, {}, {}
+                {}
+            ),
+            DateFormat.getDateInstance(),
+            mutableMapOf(), listOf(2523),
+            {}, {}, {}
         )
     }
 }
