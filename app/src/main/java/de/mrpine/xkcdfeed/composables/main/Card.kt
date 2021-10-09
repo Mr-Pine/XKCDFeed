@@ -38,7 +38,8 @@ fun ComicCard(
     favoriteList: List<Int>,
     setFavorite: (XKCDComic) -> Unit,
     removeFavorite: (XKCDComic) -> Unit,
-    onLongPress: suspend (XKCDComic) -> Unit
+    onLongPress: suspend (XKCDComic) -> Unit,
+    showSingle: (XKCDComic) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     Card(
@@ -47,7 +48,7 @@ fun ComicCard(
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onLongClick = { scope.launch { onLongPress(xkcdComic) } }) {}
+            .combinedClickable(onLongClick = { scope.launch { onLongPress(xkcdComic) } }) {showSingle(xkcdComic)}
     ) {
         MaterialTheme.colors.primarySurface
         Column(modifier = Modifier.padding(top = 4.dp, start = 8.dp, end = 8.dp, bottom = 8.dp)) {
@@ -138,7 +139,7 @@ fun PreviewCard() {
             ),
             DateFormat.getDateInstance(),
             mutableMapOf(), listOf(2523),
-            {}, {}, {}
+            {}, {}, {}, {}
         )
     }
 }

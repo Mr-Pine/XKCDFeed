@@ -36,11 +36,11 @@ import kotlin.random.Random
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun MainContent(viewModel: MainViewModel) { //navRoute = mainView
+fun MainContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) { //navRoute = mainView
     val favSheetState = viewModel.modalBottomSheetState
     val scope = rememberCoroutineScope()
 
-    SheetLayout(favSheetState, viewModel, scope)
+    SheetLayout(favSheetState, viewModel, scope, showSingleComic)
 }
 
 
@@ -48,7 +48,7 @@ fun MainContent(viewModel: MainViewModel) { //navRoute = mainView
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun SheetLayout(state: ModalBottomSheetState, viewModel: MainViewModel, scope: CoroutineScope) {
+fun SheetLayout(state: ModalBottomSheetState, viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCDComic) -> Unit) {
     val favoriteList = viewModel.favoriteListFlow.collectAsState(initial = listOf()).value
     val currentComic = viewModel.currentBottomSheetXKCDComic.value
     val isFav = if (currentComic != null) favoriteList.contains(currentComic.id) else false
@@ -84,7 +84,7 @@ fun SheetLayout(state: ModalBottomSheetState, viewModel: MainViewModel, scope: C
         sheetState = state,
         scrimColor = MaterialTheme.colors.primaryVariant.copy(alpha = 0.7f)
     ) {
-        MainScaffold(viewModel)
+        MainScaffold(viewModel, showSingleComic)
     }
 }
 
@@ -161,10 +161,10 @@ fun sheetContent(
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun MainScaffold(viewModel: MainViewModel) {
+fun MainScaffold(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
 
     Scaffold(topBar = { TopAppBar() }) {
-        TabbedContent(viewModel)
+        TabbedContent(viewModel, showSingleComic)
     }
 }
 
@@ -184,7 +184,7 @@ fun TopAppBar() {
 //<editor-fold desc="Tab Main Layout">
 @ExperimentalPagerApi
 @Composable
-fun TabbedContent(viewModel: MainViewModel) {
+fun TabbedContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
 
     val tabPagerState = rememberPagerState(0)
     val scope = rememberCoroutineScope()
@@ -215,7 +215,14 @@ fun TabbedContent(viewModel: MainViewModel) {
             )
         }
         HorizontalPager(count = 2, state = tabPagerState) { page ->
-            TabContent(pagerState = tabPagerState, pagerScope = this, page, viewModel, scope = scope)
+            TabContent(
+                pagerState = tabPagerState,
+                pagerScope = this,
+                page,
+                viewModel,
+                scope = scope,
+                showSingleComic
+            )
         }
     }
 }
@@ -227,11 +234,12 @@ fun TabContent(
     pagerScope: PagerScope,
     pageIndex: Int,
     viewModel: MainViewModel,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    showSingleComic: (XKCDComic) -> Unit
 ) {
     when (pageIndex) {
-        0 -> Tab1(viewModel)
-        1 -> Tab2(viewModel, scope)
+        0 -> Tab1(viewModel, showSingleComic)
+        1 -> Tab2(viewModel, scope, showSingleComic)
         else -> Text(text = "error occurred")
     }
 }
@@ -242,7 +250,7 @@ private const val TAG = "mainComposable"
 //<editor-fold desc="Tab Pages">
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun Tab1(viewModel: MainViewModel) {
+fun Tab1(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
 
     Scaffold(floatingActionButton = {
         FloatingActionButton(onClick = {
@@ -258,7 +266,8 @@ fun Tab1(viewModel: MainViewModel) {
         ComicList(
             list = viewModel.latestComicsList,
             imagesLoadedMap = viewModel.latestImagesLoadedMap,
-            viewModel = viewModel
+            viewModel = viewModel,
+            showSingleComic = showSingleComic
         )
     }
 
@@ -266,7 +275,7 @@ fun Tab1(viewModel: MainViewModel) {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun Tab2(viewModel: MainViewModel, scope: CoroutineScope) {
+fun Tab2(viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCDComic) -> Unit) {
     Scaffold(floatingActionButton = {
         FloatingActionButton(onClick = {
             val randomIndex = Random.nextInt(viewModel.favListState.layoutInfo.totalItemsCount)
@@ -281,7 +290,8 @@ fun Tab2(viewModel: MainViewModel, scope: CoroutineScope) {
             list = viewModel.favoriteComicsList,
             imagesLoadedMap = viewModel.favoriteImagesLoadedMap,
             viewModel = viewModel,
-            viewModel.favListState
+            showSingleComic = showSingleComic,
+            state = viewModel.favListState
         )
     }
 }
@@ -292,6 +302,7 @@ fun ComicList(
     list: List<XKCDComic>,
     imagesLoadedMap: MutableMap<Int, Boolean>,
     viewModel: MainViewModel,
+    showSingleComic: (XKCDComic) -> Unit,
     state: LazyListState? = null
 ) {
     LazyColumn(
@@ -310,7 +321,8 @@ fun ComicList(
                 viewModel.favoriteListFlow.collectAsState(initial = mutableListOf()).value,
                 viewModel::addFavorite,
                 viewModel::removeFavorite,
-                viewModel::showBottomSheet
+                viewModel::showBottomSheet,
+                showSingleComic
             )
         }
     }

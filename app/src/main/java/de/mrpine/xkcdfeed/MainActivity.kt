@@ -5,17 +5,14 @@ import android.os.Bundle
 import android.text.format.DateFormat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,7 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.accompanist.pager.ExperimentalPagerApi
 import de.mrpine.xkcdfeed.composables.main.MainContent
-import de.mrpine.xkcdfeed.composables.single.SinglePreview
+import de.mrpine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -43,7 +40,7 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val navController = rememberNavController()
 
-            val viewModel: MainViewModel = ViewModelProvider(
+            val mainViewModel: MainViewModel = ViewModelProvider(
                 this,
                 MainViewModelFactory(
                     userDataStore,
@@ -53,20 +50,26 @@ class MainActivity : ComponentActivity() {
                 )
             ).get(MainViewModel::class.java)
 
-            if (viewModel.latestComicsList.isEmpty()) {
-                viewModel.addLatestComics(4, this)
+            if (mainViewModel.latestComicsList.isEmpty()) {
+                mainViewModel.addLatestComics(4, this)
 
                 scope.launch {
-                    val favList = viewModel.favoriteListFlow.first()
+                    val favList = mainViewModel.favoriteListFlow.first()
                     for (i in favList) {
-                        viewModel.addComic(i, this@MainActivity, MainViewModel.Tab.FAVORITES)
+                        mainViewModel.addComic(i, this@MainActivity, MainViewModel.Tab.FAVORITES)
                     }
                 }
             }
 
+            val singleComicViewModel: SingleComicViewModel = viewModel()
+
             XKCDFeedTheme {
                 NavHost(navController = navController, startDestination = "mainView") {
-                    composable("mainView") { MainContent(viewModel) }
+                    composable("mainView") { MainContent(mainViewModel) {
+                        singleComicViewModel.setComic(it)
+                        navController.navigate("singleView/${it.id}")
+                    }
+                    }
                     composable("test") { Text("hello") }
                     composable(
                         route = "singleView/{number}",
@@ -74,11 +77,14 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
 
                         val comicNumber = backStackEntry.arguments?.getInt("number")
-                        if (comicNumber != null) {
-                            SinglePreview()
-                        }else{
-                            Text(text = "An Error occured", color = Color.Red, modifier = Modifier.fillMaxSize(), textAlign = TextAlign.Center)
+                        if (comicNumber == null) {
+                            singleComicViewModel.setComic(mainViewModel.latestComicNumber, this@MainActivity)
                         }
+                        SingleViewContentStateful(
+                            mainViewModel = mainViewModel,
+                            singleViewModel = singleComicViewModel,
+                            setComic = {singleComicViewModel.setComic(it, this@MainActivity)}
+                        )
                     }
                 }
             }

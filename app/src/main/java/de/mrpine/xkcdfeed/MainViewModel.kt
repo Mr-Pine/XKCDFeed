@@ -31,6 +31,8 @@ class MainViewModel(
 ) : ViewModel() {
     private val TAG = "MainViewModel"
 
+    var latestComicNumber = -1
+
     //<editor-fold desc="BottomSheet State">
     @ExperimentalMaterialApi
     var modalBottomSheetState = ModalBottomSheetState(ModalBottomSheetValue.Hidden)
@@ -179,6 +181,7 @@ class MainViewModel(
         viewModelScope.launch {
             getHttpJSON("https://xkcd.com/info.0.json", context) {
                 val number = it.getInt("num")
+                latestComicNumber = number
                 for (i in number downTo (number - (count - 1))) {
                     addComicSync(i, context, Tab.LATEST)
                 }
