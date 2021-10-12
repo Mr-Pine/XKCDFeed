@@ -209,8 +209,6 @@ fun ZoomableImage(bitmap: ImageBitmap) {
 
                     centoid = transformCentroid
 
-                    //TODO: Fix
-
                     val x0 = centoid.x - imageCenter.x
                     val y0 = centoid.y - imageCenter.y
 
