@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.format.DateFormat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.runtime.rememberCoroutineScope
@@ -33,6 +34,7 @@ val Context.userDataStore: DataStore<Preferences> by preferencesDataStore(name =
 @ExperimentalMaterialApi
 class MainActivity : ComponentActivity() {
 
+    @ExperimentalFoundationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

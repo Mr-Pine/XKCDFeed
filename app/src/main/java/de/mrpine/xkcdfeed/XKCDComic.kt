@@ -57,7 +57,6 @@ class XKCDComic(
             }
         }
         onFinish()
-        Log.d(TAG, "convertToDarkImage: $id")
         return darkBitmap
     }
 
@@ -126,13 +125,8 @@ fun getHttpJSON(
     StrictMode.setThreadPolicy(policy)
     val jsonObjectRequest = JsonObjectRequest(
         Request.Method.GET, getURL, null,
-        { response ->
-            Log.d(TAG, "getHttpJSON: ${response.getInt("num")}")
-            returnFunction(response)
-        },
-        { error ->
-            onError(error)
-        }
+        returnFunction,
+        onError
     )
 
     requestQueue.add(jsonObjectRequest)

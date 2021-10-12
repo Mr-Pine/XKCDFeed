@@ -2,9 +2,12 @@ package de.mrpine.xkcdfeed.composables.single
 
 import android.content.Intent
 import android.content.res.Configuration
+import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,15 +16,13 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.StarOutline
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontStyle
@@ -29,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.mrpine.xkcdfeed.MainViewModel
@@ -41,7 +44,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.*
+import kotlin.math.roundToInt
 
+private const val TAG = "Single"
+
+@ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Composable
 fun SingleViewContent(
@@ -130,24 +137,145 @@ fun SingleViewContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 77.dp, start = 4.dp, end = 4.dp),
+                .padding(bottom = 77.dp),
             contentAlignment = Alignment.Center
         ) {
             if (imageLoaded) {
                 val bitmap =
                     if (MaterialTheme.colors.isLight) comic.bitmapLight else comic.bitmapDark
                 if (bitmap != null) {
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Comic Image",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
-                    )
+                    ZoomableImage(bitmap = bitmap.asImageBitmap())
                 }
             } else {
                 CircularProgressIndicator()
             }
         }
+    }
+}
+
+@ExperimentalFoundationApi
+@Composable
+fun ZoomableImage(bitmap: ImageBitmap) {
+    val maxScale = 0.030F
+    val minScale = 10F
+    val scope = rememberCoroutineScope()
+
+    var scale by remember { mutableStateOf(1f) }
+    var rotation by remember { mutableStateOf(0f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+    val state = rememberTransformableState { zoomChange, offsetChange, rotationChange ->
+        scale *= zoomChange
+        rotation += rotationChange
+        offset += offsetChange
+    }
+    var centoid by remember { mutableStateOf(Offset(1f, 1f)) }
+
+    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+    var layerSize by remember { mutableStateOf(IntSize(1, 1)) }
+
+    var isTransforming by remember { mutableStateOf(false) }
+
+    Box(
+        Modifier
+            // apply pan offset state as a layout transformation before other modifiers
+            // add transformable to listen to multitouch transformation events after offset
+            //.transformable(state = state)
+            // optional for example: add double click to zoom
+
+            .pointerInput(Unit) {
+                detectDragGestures(onDragStart = { dragOffset = Offset.Zero }, onDragEnd = {
+                    if (scale == 1f) {
+                        val offsetX = dragOffset.x
+                        if (offsetX > 100) {
+                            Log.d(TAG, "ZoomableImage: right")
+                        } else if (offsetX < 100) {
+                            Log.d(TAG, "ZoomableImage: left")
+                        }
+                    }
+                }) { _, dragAmount ->
+                    if (scale != 1f) {
+                        offset += dragAmount
+                        Log.d(TAG, "ZoomableImage: helo")
+                    } else {
+                        dragOffset += dragAmount
+                    }
+                }
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onDoubleTap = {
+                        if (scale != 1f) {
+                            scope.launch {
+                                state.animateZoomBy(1 / scale)
+                            }
+                            offset = Offset.Zero
+                            rotation = 0f
+                        } else {
+                            scope.launch {
+                                state.animateZoomBy(2f)
+                            }
+                        }
+                    }
+                )
+            }
+            .pointerInput(Unit) {
+                detectTransformGestures { transformCentroid, pan, zoom, transformRotation ->
+                    offset += pan
+                    scale *= zoom
+                    rotation += transformRotation
+
+                    /*if (!isTransforming) {
+                        //offset -= centoid - transformCentroid
+                        centoid = transformCentroid
+                    }
+                    isTransforming = true*/
+
+                    /*//TODO: Fix
+
+                    val x0 = centoid.x - imageOffset.x
+                    val y0 = centoid.y - imageOffset.y
+
+                    val hyp0 = sqrt(x0 * x0 + y0 * y0)
+                    val hyp1 = scale * hyp0
+
+                    val alpha0 = atan(y0 / x0)
+
+                    val alpha1 = alpha0 - transformRotation
+
+                    val x1 = sin(alpha1) * hyp1
+                    val y1 = cos(alpha1) * hyp1
+
+                    offset = Offset(x1, y1)
+*/
+                    //Log.d(TAG, "ZoomableImage: $centoid")
+                }
+            }
+    ) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = "Comic Image",
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RectangleShape)
+                /*.onGloballyPositioned { coordinates ->
+                    layerSize = coordinates.size
+                }*/
+                .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
+                .graphicsLayer(
+                    scaleX = scale - 0.02f,
+                    scaleY = scale - 0.02f,
+                    /*transformOrigin = TransformOrigin(
+                        centoid.x / layerSize.width,
+                        centoid.y / layerSize.height
+                    ),*/
+                    rotationZ = rotation
+                ),
+            contentScale = ContentScale.Fit
+        )/*
+        Box(modifier = Modifier
+            .size(5.dp)
+            .absoluteOffset { IntOffset(centoid.x.toInt(), centoid.y.toInt()) }
+            .background(Color.Red))*/
     }
 }
 
@@ -285,6 +413,7 @@ fun BottomSheetContent(
     }
 }
 
+@ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Composable
 fun SingleViewContentStateful(
@@ -318,6 +447,7 @@ fun SingleViewContentStateful(
     }
 }
 
+@ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Preview
 @Composable
