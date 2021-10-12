@@ -124,7 +124,7 @@ fun SingleViewContent(
             bottomStart = CornerSize(0.dp),
             bottomEnd = CornerSize(0.dp)
         ),
-        sheetContent = BottomSheetContent(
+        sheetContent = bottomSheetContent(
             comic,
             dateFormat,
             isFavorite,
@@ -178,12 +178,6 @@ fun ZoomableImage(bitmap: ImageBitmap) {
 
     Box(
         Modifier
-            // apply pan offset state as a layout transformation before other modifiers
-            // add transformable to listen to multitouch transformation events after offset
-            //.transformable(state = state)
-            // optional for example: add double click to zoom
-
-
             .pointerInput(Unit) {
                 detectTapGestures(
                     onDoubleTap = {
@@ -226,13 +220,9 @@ fun ZoomableImage(bitmap: ImageBitmap) {
                     val x1 = cos(alpha1) * hyp1
                     val y1 = sin(alpha1) * hyp1
 
-                    transformOffset = centoid - (imageCenter - offset) - Offset(x1.toFloat(), y1.toFloat())
+                    transformOffset =
+                        centoid - (imageCenter - offset) - Offset(x1.toFloat(), y1.toFloat())
                     offset = transformOffset
-
-                    Log.d(
-                        TAG,
-                        "ZoomableImage: offset: $offset, angle: $alpha1, zoom: $zoom, rotation: $transformRotation"
-                    )
                 }
             }
             .pointerInput(Unit) {
@@ -264,10 +254,6 @@ fun ZoomableImage(bitmap: ImageBitmap) {
                 .graphicsLayer(
                     scaleX = scale - 0.02f,
                     scaleY = scale - 0.02f,
-                    /*transformOrigin = TransformOrigin(
-                        centoid.x / layerSize.width,
-                        centoid.y / layerSize.height
-                    ),*/
                     rotationZ = rotation
                 )
                 .onGloballyPositioned { coordinates ->
@@ -279,31 +265,14 @@ fun ZoomableImage(bitmap: ImageBitmap) {
                     val windowOffset = coordinates.localToWindow(localOffset)
                     imageCenter = coordinates.parentLayoutCoordinates?.windowToLocal(windowOffset)
                         ?: Offset.Zero
-                    //Log.d(TAG, "ZoomableImage: local: $localOffset, window: $windowOffset, imageCenter: $imageCenter")
                 },
             contentScale = ContentScale.Fit
         )
-        Box(modifier = Modifier
-            .size(5.dp)
-            .absoluteOffset { IntOffset(imageCenter.x.toInt(), imageCenter.y.toInt()) }
-            .background(Color.Red))
-        Box(modifier = Modifier
-            .size(5.dp)
-            .absoluteOffset { IntOffset(centoid.x.toInt(), centoid.y.toInt()) }
-            .background(Color.Cyan))
-        Box(modifier = Modifier
-            .size(5.dp)
-            .absoluteOffset { IntOffset(offset.x.toInt(), offset.y.toInt()) }
-            .background(Color.Green))
-        Box(modifier = Modifier
-            .size(5.dp)
-            .absoluteOffset { IntOffset(transformOffset.x.toInt(), transformOffset.y.toInt()) }
-            .background(Color.Magenta))
     }
 }
 
 @Composable
-fun BottomSheetContent(
+fun bottomSheetContent(
     comic: XKCDComic,
     dateFormat: DateFormat,
     isFavorite: Boolean,
