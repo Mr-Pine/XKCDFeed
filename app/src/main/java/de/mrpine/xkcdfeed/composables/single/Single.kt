@@ -32,7 +32,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.mrpine.xkcdfeed.MainViewModel
@@ -45,7 +44,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.*
-import kotlin.math.roundToInt
+import kotlin.math.*
 
 private const val TAG = "Single"
 
@@ -173,9 +172,9 @@ fun ZoomableImage(bitmap: ImageBitmap) {
     var centoid by remember { mutableStateOf(Offset(1f, 1f)) }
 
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
-    var layerSize by remember { mutableStateOf(IntSize(1, 1)) }
+    var imageCenter by remember { mutableStateOf(Offset.Zero) }
+    var transformOffset by remember { mutableStateOf(Offset.Zero) }
 
-    var isTransforming by remember { mutableStateOf(false) }
 
     Box(
         Modifier
@@ -210,29 +209,37 @@ fun ZoomableImage(bitmap: ImageBitmap) {
 
                     centoid = transformCentroid
 
-                    /*//TODO: Fix
+                    //TODO: Fix
 
-                    val x0 = centoid.x - imageOffset.x
-                    val y0 = centoid.y - imageOffset.y
+                    val x0 = centoid.x - imageCenter.x
+                    val y0 = centoid.y - imageCenter.y
 
                     val hyp0 = sqrt(x0 * x0 + y0 * y0)
-                    val hyp1 = scale * hyp0
+                    val hyp1 = zoom * hyp0 * (if (x0 > 0) {
+                        1f
+                    } else {
+                        -1f
+                    })
 
                     val alpha0 = atan(y0 / x0)
 
-                    val alpha1 = alpha0 - transformRotation
+                    val alpha1 = alpha0 + (transformRotation * ((2 * PI) / 360))
 
-                    val x1 = sin(alpha1) * hyp1
-                    val y1 = cos(alpha1) * hyp1
+                    val x1 = cos(alpha1) * hyp1
+                    val y1 = sin(alpha1) * hyp1
 
-                    offset = Offset(x1, y1)
-*/
-                    //Log.d(TAG, "ZoomableImage: $centoid")
+                    transformOffset = centoid - (imageCenter - offset) - Offset(x1.toFloat(), y1.toFloat())
+                    offset = transformOffset
+
+                    Log.d(
+                        TAG,
+                        "ZoomableImage: offset: $offset, angle: $alpha1, zoom: $zoom, rotation: $transformRotation"
+                    )
                 }
             }
             .pointerInput(Unit) {
                 detectDragGestures(onDragStart = { dragOffset = Offset.Zero }, onDragEnd = {
-                    if (scale in 0.92f..1.08f)  {
+                    if (scale in 0.92f..1.08f) {
                         val offsetX = dragOffset.x
                         if (offsetX > 100) {
                             Log.d(TAG, "ZoomableImage: right")
@@ -243,7 +250,6 @@ fun ZoomableImage(bitmap: ImageBitmap) {
                 }) { _, dragAmount ->
                     if (scale !in 0.92f..1.08f) {
                         offset += dragAmount
-                        Log.d(TAG, "ZoomableImage: helo")
                     } else {
                         dragOffset += dragAmount
                     }
@@ -256,9 +262,6 @@ fun ZoomableImage(bitmap: ImageBitmap) {
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RectangleShape)
-                .onGloballyPositioned { coordinates ->
-                    layerSize = coordinates.size
-                }
                 .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
                 .graphicsLayer(
                     scaleX = scale - 0.02f,
@@ -268,13 +271,36 @@ fun ZoomableImage(bitmap: ImageBitmap) {
                         centoid.y / layerSize.height
                     ),*/
                     rotationZ = rotation
-                ),
+                )
+                .onGloballyPositioned { coordinates ->
+                    val localOffset =
+                        Offset(
+                            coordinates.size.width.toFloat() / 2,
+                            coordinates.size.height.toFloat() / 2
+                        )
+                    val windowOffset = coordinates.localToWindow(localOffset)
+                    imageCenter = coordinates.parentLayoutCoordinates?.windowToLocal(windowOffset)
+                        ?: Offset.Zero
+                    //Log.d(TAG, "ZoomableImage: local: $localOffset, window: $windowOffset, imageCenter: $imageCenter")
+                },
             contentScale = ContentScale.Fit
-        )/*
+        )
+        Box(modifier = Modifier
+            .size(5.dp)
+            .absoluteOffset { IntOffset(imageCenter.x.toInt(), imageCenter.y.toInt()) }
+            .background(Color.Red))
         Box(modifier = Modifier
             .size(5.dp)
             .absoluteOffset { IntOffset(centoid.x.toInt(), centoid.y.toInt()) }
-            .background(Color.Red))*/
+            .background(Color.Cyan))
+        Box(modifier = Modifier
+            .size(5.dp)
+            .absoluteOffset { IntOffset(offset.x.toInt(), offset.y.toInt()) }
+            .background(Color.Green))
+        Box(modifier = Modifier
+            .size(5.dp)
+            .absoluteOffset { IntOffset(transformOffset.x.toInt(), transformOffset.y.toInt()) }
+            .background(Color.Magenta))
     }
 }
 
