@@ -138,7 +138,8 @@ fun SingleViewContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 77.dp),
+                .padding(bottom = 77.dp)
+                .background(Color.Black),
             contentAlignment = Alignment.Center
         ) {
             if (imageLoaded) {
@@ -231,7 +232,7 @@ fun ZoomableImage(bitmap: ImageBitmap) {
             }
             .pointerInput(Unit) {
                 detectDragGestures(onDragStart = { dragOffset = Offset.Zero }, onDragEnd = {
-                    if (scale == 1f) {
+                    if (scale in 0.92f..1.08f)  {
                         val offsetX = dragOffset.x
                         if (offsetX > 100) {
                             Log.d(TAG, "ZoomableImage: right")
@@ -240,7 +241,7 @@ fun ZoomableImage(bitmap: ImageBitmap) {
                         }
                     }
                 }) { _, dragAmount ->
-                    if (scale != 1f) {
+                    if (scale !in 0.92f..1.08f) {
                         offset += dragAmount
                         Log.d(TAG, "ZoomableImage: helo")
                     } else {
