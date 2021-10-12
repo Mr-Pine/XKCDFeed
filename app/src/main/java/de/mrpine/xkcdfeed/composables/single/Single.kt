@@ -24,6 +24,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -182,25 +183,7 @@ fun ZoomableImage(bitmap: ImageBitmap) {
             //.transformable(state = state)
             // optional for example: add double click to zoom
 
-            .pointerInput(Unit) {
-                detectDragGestures(onDragStart = { dragOffset = Offset.Zero }, onDragEnd = {
-                    if (scale == 1f) {
-                        val offsetX = dragOffset.x
-                        if (offsetX > 100) {
-                            Log.d(TAG, "ZoomableImage: right")
-                        } else if (offsetX < 100) {
-                            Log.d(TAG, "ZoomableImage: left")
-                        }
-                    }
-                }) { _, dragAmount ->
-                    if (scale != 1f) {
-                        offset += dragAmount
-                        Log.d(TAG, "ZoomableImage: helo")
-                    } else {
-                        dragOffset += dragAmount
-                    }
-                }
-            }
+
             .pointerInput(Unit) {
                 detectTapGestures(
                     onDoubleTap = {
@@ -219,16 +202,12 @@ fun ZoomableImage(bitmap: ImageBitmap) {
                 )
             }
             .pointerInput(Unit) {
-                detectTransformGestures { transformCentroid, pan, zoom, transformRotation ->
+                detectTransformGestures(true) { transformCentroid, pan, zoom, transformRotation ->
                     offset += pan
                     scale *= zoom
                     rotation += transformRotation
 
-                    /*if (!isTransforming) {
-                        //offset -= centoid - transformCentroid
-                        centoid = transformCentroid
-                    }
-                    isTransforming = true*/
+                    centoid = transformCentroid
 
                     /*//TODO: Fix
 
@@ -250,6 +229,25 @@ fun ZoomableImage(bitmap: ImageBitmap) {
                     //Log.d(TAG, "ZoomableImage: $centoid")
                 }
             }
+            .pointerInput(Unit) {
+                detectDragGestures(onDragStart = { dragOffset = Offset.Zero }, onDragEnd = {
+                    if (scale == 1f) {
+                        val offsetX = dragOffset.x
+                        if (offsetX > 100) {
+                            Log.d(TAG, "ZoomableImage: right")
+                        } else if (offsetX < 100) {
+                            Log.d(TAG, "ZoomableImage: left")
+                        }
+                    }
+                }) { _, dragAmount ->
+                    if (scale != 1f) {
+                        offset += dragAmount
+                        Log.d(TAG, "ZoomableImage: helo")
+                    } else {
+                        dragOffset += dragAmount
+                    }
+                }
+            }
     ) {
         Image(
             bitmap = bitmap,
@@ -257,9 +255,9 @@ fun ZoomableImage(bitmap: ImageBitmap) {
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RectangleShape)
-                /*.onGloballyPositioned { coordinates ->
+                .onGloballyPositioned { coordinates ->
                     layerSize = coordinates.size
-                }*/
+                }
                 .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
                 .graphicsLayer(
                     scaleX = scale - 0.02f,
