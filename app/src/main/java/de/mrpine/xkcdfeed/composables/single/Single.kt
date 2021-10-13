@@ -2,7 +2,6 @@ package de.mrpine.xkcdfeed.composables.single
 
 import android.content.Intent
 import android.content.res.Configuration
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,12 +25,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.mrpine.xkcdfeed.MainViewModel
@@ -68,9 +69,11 @@ fun SingleViewContent(
 
     val orientation = LocalConfiguration.current.orientation
     LaunchedEffect(key1 = Unit, block = {
-        if (orientation == Configuration.ORIENTATION_PORTRAIT)
+        if (orientation == Configuration.ORIENTATION_PORTRAIT && scaffoldState.bottomSheetState.isCollapsed)
             scaffoldState.bottomSheetState.expand()
     })
+
+    var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
@@ -133,19 +136,27 @@ fun SingleViewContent(
             startActivity,
             scope
         ),
+        modifier = Modifier
+            .onGloballyPositioned { layoutCoordinates ->
+                parentSize = layoutCoordinates.size
+            }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 77.dp)
-                .background(Color.Black),
+                .background(Color.Black)
+                .padding(bottom = with(LocalDensity.current){(parentSize.height - scaffoldState.bottomSheetState.offset.value).toDp()}),
             contentAlignment = Alignment.Center
         ) {
             if (imageLoaded) {
                 val bitmap =
                     if (MaterialTheme.colors.isLight) comic.bitmapLight else comic.bitmapDark
                 if (bitmap != null) {
-                    ZoomableImage(bitmap = bitmap.asImageBitmap())
+                    ZoomableImage(
+                        bitmap = bitmap.asImageBitmap(),
+                        { if (currentNumber < maxNumber) setNumber(currentNumber + 1) },
+                        { if (currentNumber > 0) setNumber(currentNumber - 1) },
+                    )
                 }
             } else {
                 CircularProgressIndicator()
@@ -156,7 +167,11 @@ fun SingleViewContent(
 
 @ExperimentalFoundationApi
 @Composable
-fun ZoomableImage(bitmap: ImageBitmap) {
+fun ZoomableImage(
+    bitmap: ImageBitmap,
+    onSwipeLeft: () -> Unit,
+    onSwipeRight: () -> Unit,
+) {
     val maxScale = 0.030F
     val minScale = 10F
     val scope = rememberCoroutineScope()
@@ -229,10 +244,10 @@ fun ZoomableImage(bitmap: ImageBitmap) {
                 detectDragGestures(onDragStart = { dragOffset = Offset.Zero }, onDragEnd = {
                     if (scale in 0.92f..1.08f) {
                         val offsetX = dragOffset.x
-                        if (offsetX > 100) {
-                            Log.d(TAG, "ZoomableImage: right")
-                        } else if (offsetX < 100) {
-                            Log.d(TAG, "ZoomableImage: left")
+                        if (offsetX > 300) {
+                            onSwipeRight()
+                        } else if (offsetX < 300) {
+                            onSwipeLeft()
                         }
                     }
                 }) { _, dragAmount ->

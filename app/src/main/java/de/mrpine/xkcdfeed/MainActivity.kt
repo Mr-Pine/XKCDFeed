@@ -67,10 +67,11 @@ class MainActivity : ComponentActivity() {
 
             XKCDFeedTheme {
                 NavHost(navController = navController, startDestination = "mainView") {
-                    composable("mainView") { MainContent(mainViewModel) {
-                        singleComicViewModel.setComic(it)
-                        navController.navigate("singleView/${it.id}")
-                    }
+                    composable("mainView") {
+                        MainContent(mainViewModel) {
+                            singleComicViewModel.setComic(it)
+                            navController.navigate("singleView/${it.id}")
+                        }
                     }
                     composable("test") { Text("hello") }
                     composable(
@@ -79,13 +80,25 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
 
                         val comicNumber = backStackEntry.arguments?.getInt("number")
-                        if (comicNumber == null) {
-                            singleComicViewModel.setComic(mainViewModel.latestComicNumber, this@MainActivity)
+                        SingleViewContentStateful(
+                            mainViewModel = mainViewModel,
+                            singleViewModel = singleComicViewModel,
+                            setComic = { singleComicViewModel.setComic(it, this@MainActivity) }
+                        )
+                    }
+                    composable(
+                        route = "singleView"
+                    ) {
+                        if (singleComicViewModel.currentComic.value == null) {
+                            singleComicViewModel.setComic(
+                                mainViewModel.latestComicNumber,
+                                this@MainActivity
+                            )
                         }
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
-                            setComic = {singleComicViewModel.setComic(it, this@MainActivity)}
+                            setComic = { singleComicViewModel.setComic(it, this@MainActivity) }
                         )
                     }
                 }

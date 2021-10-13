@@ -258,9 +258,9 @@ fun Tab1(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
                 TAG,
                 "Tab1: ${viewModel.favoriteImagesLoadedMap.keys}"
             )
-            viewModel.navigateTo("singleView/${2525}")
+            viewModel.navigateTo("singleView")
         }) {
-            Icon(Icons.Default.History, "Star")
+            Icon(Icons.Default.History, "History")
         }
     }) {
         ComicList(
