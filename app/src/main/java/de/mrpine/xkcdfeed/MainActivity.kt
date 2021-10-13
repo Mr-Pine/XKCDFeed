@@ -85,7 +85,8 @@ class MainActivity : ComponentActivity() {
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
-                            setComic = { singleComicViewModel.setComic(it, this@MainActivity) }
+                            setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
+                            navigate = navController::navigate
                         )
                     }
                     composable(
@@ -100,13 +101,12 @@ class MainActivity : ComponentActivity() {
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
-                            setComic = { singleComicViewModel.setComic(it, this@MainActivity) }
+                            setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
+                            navigate = navController::navigate
                         )
                     }
                 }
             }
         }
-
-
     }
 }

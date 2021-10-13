@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.*
 import kotlin.math.*
+import kotlin.random.Random
 
 private const val TAG = "Single"
 
@@ -62,6 +63,7 @@ fun SingleViewContent(
     setNumber: (Int) -> Unit,
     setFavorite: (XKCDComic) -> Unit,
     removeFavorite: (XKCDComic) -> Unit,
+    navigateHome: () -> Unit,
     startActivity: (Intent) -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -86,8 +88,8 @@ fun SingleViewContent(
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = { setNumber(0) }) {
-                        Icon(Icons.Default.FirstPage, "First Comic")
+                    IconButton(onClick = navigateHome) {
+                        Icon(Icons.Default.Close, "Close")
                     }
                     IconButton(
                         onClick = { setNumber(currentNumber - 1) },
@@ -115,8 +117,8 @@ fun SingleViewContent(
                     ) {
                         Icon(Icons.Default.ArrowForward, "Next Comic")
                     }
-                    IconButton(onClick = { setNumber(maxNumber) }) {
-                        Icon(Icons.Default.LastPage, "Latest Comic")
+                    IconButton(onClick = { setNumber(Random.nextInt(maxNumber + 1)) }) {
+                        Icon(Icons.Default.Shuffle, "Random Comic")
                     }
 
                 }
@@ -145,7 +147,7 @@ fun SingleViewContent(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
-                .padding(bottom = with(LocalDensity.current){(parentSize.height - scaffoldState.bottomSheetState.offset.value).toDp()}),
+                .padding(bottom = with(LocalDensity.current) { (parentSize.height - scaffoldState.bottomSheetState.offset.value).toDp() }),
             contentAlignment = Alignment.Center
         ) {
             if (imageLoaded) {
@@ -246,7 +248,7 @@ fun ZoomableImage(
                         val offsetX = dragOffset.x
                         if (offsetX > 300) {
                             onSwipeRight()
-                        } else if (offsetX < 300) {
+                        } else if (offsetX < -300) {
                             onSwipeLeft()
                         }
                     }
@@ -324,8 +326,8 @@ fun bottomSheetContent(
                     .fillMaxWidth()
                     .padding(bottom = 12.dp)
             ) {
-                Row() {
-                    Column() {
+                Row {
+                    Column {
                         Row(
                             verticalAlignment = Alignment.Bottom
                         ) {
@@ -426,7 +428,8 @@ fun bottomSheetContent(
 fun SingleViewContentStateful(
     singleViewModel: SingleComicViewModel,
     mainViewModel: MainViewModel,
-    setComic: (Int) -> Unit
+    setComic: (Int) -> Unit,
+    navigate: (String) -> Unit
 ) {
     val currentComic = singleViewModel.currentComic.value
     val currentNumber = singleViewModel.currentNumber.value
@@ -445,7 +448,8 @@ fun SingleViewContentStateful(
             currentNumber = currentNumber,
             setNumber = setComic,
             maxNumber = mainViewModel.latestComicNumber,
-            startActivity = { mainViewModel.startActivity(it) }
+            startActivity = { mainViewModel.startActivity(it) },
+            navigateHome = { navigate("mainView") }
         )
     } else {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -476,6 +480,7 @@ fun SinglePreview() {
             false,
             2524,
             2526,
+            {},
             {},
             {},
             {},
