@@ -42,13 +42,16 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val navController = rememberNavController()
 
+            val singleComicViewModel: SingleComicViewModel = viewModel()
+
             val mainViewModel: MainViewModel = ViewModelProvider(
                 this,
                 MainViewModelFactory(
                     userDataStore,
                     DateFormat.getDateFormat(this),
                     this::startActivity,
-                    navController::navigate
+                    navController::navigate,
+                    singleComicViewModel::addToComicCache
                 )
             ).get(MainViewModel::class.java)
 
@@ -63,7 +66,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val singleComicViewModel: SingleComicViewModel = viewModel()
 
             XKCDFeedTheme {
                 NavHost(navController = navController, startDestination = "mainView") {

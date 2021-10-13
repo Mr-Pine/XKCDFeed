@@ -27,7 +27,8 @@ class MainViewModel(
     private val userDataStore: DataStore<Preferences>,
     val dateFormat: DateFormat,
     val startActivity: (Intent) -> Unit,
-    val navigateTo: (String) -> Unit
+    val navigateTo: (String) -> Unit,
+    private val addToComicCache: (XKCDComic) -> Unit
 ) : ViewModel() {
     private val TAG = "MainViewModel"
 
@@ -171,6 +172,7 @@ class MainViewModel(
             } else {
                 addToFavoriteComicList(it)
             }
+            addToComicCache(it)
         }
     }
     //</editor-fold>
@@ -208,14 +210,15 @@ class MainViewModelFactory(
     private val userDataStore: DataStore<Preferences>,
     private val dateFormat: DateFormat,
     private val startActivity: (Intent) -> Unit,
-    private val navigateTo: (String) -> Unit
+    private val navigateTo: (String) -> Unit,
+    private val addToComicCache: (XKCDComic) -> Unit
 ) :
     ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(userDataStore, dateFormat, startActivity, navigateTo) as T
+            return MainViewModel(userDataStore, dateFormat, startActivity, navigateTo, addToComicCache) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
