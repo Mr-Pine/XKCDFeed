@@ -21,10 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChangeConsumed
-import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
@@ -197,7 +194,12 @@ fun ZoomableImage(
     var imageCenter by remember { mutableStateOf(Offset.Zero) }
     var transformOffset by remember { mutableStateOf(Offset.Zero) }
 
-    fun onTransformGesture(transformCentroid: Offset, pan: Offset, zoom: Float, transformRotation: Float){
+    fun onTransformGesture(
+        transformCentroid: Offset,
+        pan: Offset,
+        zoom: Float,
+        transformRotation: Float
+    ) {
         offset += pan
         scale *= zoom
         rotation += transformRotation
@@ -228,7 +230,7 @@ fun ZoomableImage(
 
     Box(
         Modifier
-            /*.pointerInput(Unit) {
+            .pointerInput(Unit) {
                 detectTapGestures(
                     onDoubleTap = {
                         if (scale != 1f) {
@@ -245,7 +247,7 @@ fun ZoomableImage(
                     }
                 )
             }
-            .pointerInput(Unit) {
+            /*.pointerInput(Unit) {
                 detectTransformGestures(true) { transformCentroid, pan, zoom, transformRotation ->
                     offset += pan
                     scale *= zoom
@@ -297,14 +299,16 @@ fun ZoomableImage(
                 val panZoomLock = true
                 forEachGesture {
                     awaitPointerEventScope {
-                        var rotation = 0f
+                        var transformRotation = 0f
                         var zoom = 1f
                         var pan = Offset.Zero
                         var pastTouchSlop = false
                         val touchSlop = viewConfiguration.touchSlop
                         var lockedToPanZoom = false
+                        var drag: PointerInputChange?
+                        var overSlop = Offset.Zero
 
-                        awaitFirstDown(requireUnconsumed = false)
+                        val down = awaitFirstDown(requireUnconsumed = false)
                         do {
                             val event = awaitPointerEvent()
                             val canceled = event.changes.fastAny { it.positionChangeConsumed() }
@@ -315,14 +319,14 @@ fun ZoomableImage(
 
                                 if (!pastTouchSlop) {
                                     zoom *= zoomChange
-                                    rotation += rotationChange
+                                    transformRotation += rotationChange
                                     pan += panChange
 
                                     val centroidSize =
                                         event.calculateCentroidSize(useCurrent = false)
                                     val zoomMotion = abs(1 - zoom) * centroidSize
                                     val rotationMotion =
-                                        abs(rotation * PI.toFloat() * centroidSize / 180f)
+                                        abs(transformRotation * PI.toFloat() * centroidSize / 180f)
                                     val panMotion = pan.getDistance()
 
                                     if (zoomMotion > touchSlop ||
@@ -387,7 +391,6 @@ fun ZoomableImage(
         )
     }
 }
-
 
 
 @Composable
