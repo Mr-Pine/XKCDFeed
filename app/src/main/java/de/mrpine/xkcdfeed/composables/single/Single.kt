@@ -2,6 +2,7 @@ package de.mrpine.xkcdfeed.composables.single
 
 import android.content.Intent
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,6 +11,7 @@ import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -17,17 +19,20 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,6 +40,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastAny
+import androidx.compose.ui.util.fastForEach
 import de.mrpine.xkcdfeed.MainViewModel
 import de.mrpine.xkcdfeed.SingleComicViewModel
 import de.mrpine.xkcdfeed.XKCDComic
@@ -50,6 +57,7 @@ import kotlin.random.Random
 
 private const val TAG = "Single"
 
+@ExperimentalComposeUiApi
 @ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Composable
@@ -58,7 +66,7 @@ fun SingleViewContent(
     isFavorite: Boolean,
     dateFormat: DateFormat,
     imageLoaded: Boolean,
-    currentNumber: Int,
+    getCurrentNumber: () -> Int,
     maxNumber: Int,
     setNumber: (Int) -> Unit,
     setFavorite: (XKCDComic) -> Unit,
@@ -69,14 +77,17 @@ fun SingleViewContent(
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val orientation = LocalConfiguration.current.orientation
     LaunchedEffect(key1 = Unit, block = {
         if (orientation == Configuration.ORIENTATION_PORTRAIT && scaffoldState.bottomSheetState.isCollapsed)
             scaffoldState.bottomSheetState.expand()
     })
 
-    var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
+    val currentNumber = getCurrentNumber()
 
+    var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         topBar = {
@@ -101,7 +112,7 @@ fun SingleViewContent(
                         value = currentNumber.toString(),
                         modifier = Modifier
                             .width(100.dp),
-                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                         onValueChange = { setNumber(it.toInt()) },
                         colors = TextFieldDefaults.outlinedTextFieldColors(
                             unfocusedBorderColor = Color.White,
@@ -109,7 +120,11 @@ fun SingleViewContent(
                             cursorColor = Color.White,
                             backgroundColor = MaterialTheme.colors.primaryVariant
                         ),
-                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)
+                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+                        keyboardActions = KeyboardActions(onDone = {
+                            keyboardController?.hide()
+
+                        })
                     )
                     IconButton(
                         onClick = { setNumber(currentNumber + 1) },
@@ -156,8 +171,9 @@ fun SingleViewContent(
                 if (bitmap != null) {
                     ZoomableImage(
                         bitmap = bitmap.asImageBitmap(),
-                        { if (currentNumber < maxNumber) setNumber(currentNumber + 1) },
-                        { if (currentNumber > 0) setNumber(currentNumber - 1) },
+                        {current ->  if (current < maxNumber) setNumber(current + 1) },
+                        {current -> if (current > 0) setNumber(current - 1) },
+                        getCurrentNumber = getCurrentNumber
                     )
                 }
             } else {
@@ -171,8 +187,9 @@ fun SingleViewContent(
 @Composable
 fun ZoomableImage(
     bitmap: ImageBitmap,
-    onSwipeLeft: () -> Unit,
-    onSwipeRight: () -> Unit,
+    onSwipeLeft: (Int) -> Unit,
+    onSwipeRight: (Int) -> Unit,
+    getCurrentNumber: () -> Int
 ) {
     val maxScale = 0.030F
     val minScale = 10F
@@ -186,12 +203,45 @@ fun ZoomableImage(
         rotation += rotationChange
         offset += offsetChange
     }
-    var centoid by remember { mutableStateOf(Offset(1f, 1f)) }
+    var centroid by remember { mutableStateOf(Offset(1f, 1f)) }
 
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     var imageCenter by remember { mutableStateOf(Offset.Zero) }
     var transformOffset by remember { mutableStateOf(Offset.Zero) }
 
+    fun onTransformGesture(
+        transformCentroid: Offset,
+        pan: Offset,
+        zoom: Float,
+        transformRotation: Float
+    ) {
+        offset += pan
+        scale *= zoom
+        rotation += transformRotation
+
+        centroid = transformCentroid
+
+        val x0 = centroid.x - imageCenter.x
+        val y0 = centroid.y - imageCenter.y
+
+        val hyp0 = sqrt(x0 * x0 + y0 * y0)
+        val hyp1 = zoom * hyp0 * (if (x0 > 0) {
+            1f
+        } else {
+            -1f
+        })
+
+        val alpha0 = atan(y0 / x0)
+
+        val alpha1 = alpha0 + (transformRotation * ((2 * PI) / 360))
+
+        val x1 = cos(alpha1) * hyp1
+        val y1 = sin(alpha1) * hyp1
+
+        transformOffset =
+            centroid - (imageCenter - offset) - Offset(x1.toFloat(), y1.toFloat())
+        offset = transformOffset
+    }
 
     Box(
         Modifier
@@ -212,7 +262,8 @@ fun ZoomableImage(
                     }
                 )
             }
-            .pointerInput(Unit) {
+            //<editor-fold desc="old code">
+            /*.pointerInput(Unit) {
                 detectTransformGestures(true) { transformCentroid, pan, zoom, transformRotation ->
                     offset += pan
                     scale *= zoom
@@ -259,6 +310,124 @@ fun ZoomableImage(
                         dragOffset += dragAmount
                     }
                 }
+            }*/
+            //</editor-fold>
+            .pointerInput(Unit) {
+                val panZoomLock = true
+                forEachGesture {
+                    awaitPointerEventScope {
+                        var transformRotation = 0f
+                        var zoom = 1f
+                        var pan = Offset.Zero
+                        var pastTouchSlop = false
+                        val touchSlop = viewConfiguration.touchSlop
+                        var lockedToPanZoom = false
+                        var drag: PointerInputChange?
+                        var overSlop = Offset.Zero
+
+                        val down = awaitFirstDown(requireUnconsumed = false)
+
+
+                        var transformEventCounter = 0
+                        do {
+                            val event = awaitPointerEvent()
+                            val canceled = event.changes.fastAny { it.positionChangeConsumed() }
+                            var relevant = true
+                            if (event.changes.size > 1) {
+                                if (!canceled) {
+                                    val zoomChange = event.calculateZoom()
+                                    val rotationChange = event.calculateRotation()
+                                    val panChange = event.calculatePan()
+
+                                    if (!pastTouchSlop) {
+                                        zoom *= zoomChange
+                                        transformRotation += rotationChange
+                                        pan += panChange
+
+                                        val centroidSize =
+                                            event.calculateCentroidSize(useCurrent = false)
+                                        val zoomMotion = abs(1 - zoom) * centroidSize
+                                        val rotationMotion =
+                                            abs(transformRotation * PI.toFloat() * centroidSize / 180f)
+                                        val panMotion = pan.getDistance()
+
+                                        if (zoomMotion > touchSlop ||
+                                            rotationMotion > touchSlop ||
+                                            panMotion > touchSlop
+                                        ) {
+                                            pastTouchSlop = true
+                                            lockedToPanZoom =
+                                                panZoomLock && rotationMotion < touchSlop
+                                        }
+                                    }
+
+                                    if (pastTouchSlop) {
+                                        val eventCentroid = event.calculateCentroid(useCurrent = false)
+                                        val effectiveRotation =
+                                            if (lockedToPanZoom) 0f else rotationChange
+                                        if (effectiveRotation != 0f ||
+                                            zoomChange != 1f ||
+                                            panChange != Offset.Zero
+                                        ) {
+                                            onTransformGesture(
+                                                eventCentroid,
+                                                panChange,
+                                                zoomChange,
+                                                effectiveRotation
+                                            )
+                                        }
+                                        event.changes.fastForEach {
+                                            if (it.positionChanged()) {
+                                                it.consumeAllChanges()
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (transformEventCounter > 3) relevant = false
+                            transformEventCounter++
+                        } while (!canceled && event.changes.fastAny { it.pressed } && relevant)
+
+                        do {
+                            val event = awaitPointerEvent()
+                            Log.d(TAG, "ZoomableImage: drag, event changes Size: ${event.changes.size}")
+                            drag = awaitTouchSlopOrCancellation(down.id) { change, over ->
+                                change.consumePositionChange()
+                                overSlop = over
+                            }
+                        } while (drag != null && !drag.positionChangeConsumed())
+                        if (drag != null) {
+                            dragOffset = Offset.Zero
+                            if (scale !in 0.92f..1.08f) {
+                                offset += overSlop
+                            } else {
+                                dragOffset += overSlop
+                            }
+                            if (drag(drag.id) {
+                                    Log.d(TAG, "ZoomableImage: $scale")
+                                    if (scale !in 0.92f..1.08f) {
+                                        offset += it.positionChange()
+                                    } else {
+                                        dragOffset += it.positionChange()
+                                    }
+                                    it.consumePositionChange()
+                                }
+                            ) {
+                                Log.d(TAG, "ZoomableImage: end")
+                                if (scale in 0.92f..1.08f) {
+                                    val offsetX = dragOffset.x
+                                    if (offsetX > 300) {
+                                        Log.d(TAG, "ZoomableImage: right, number: ${getCurrentNumber()}")
+                                        onSwipeRight(getCurrentNumber())
+
+                                    } else if (offsetX < -300) {
+                                        Log.d(TAG, "ZoomableImage: left, number: ${getCurrentNumber()}")
+                                        onSwipeLeft(getCurrentNumber())
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
     ) {
         Image(
@@ -287,6 +456,7 @@ fun ZoomableImage(
         )
     }
 }
+
 
 @Composable
 fun bottomSheetContent(
@@ -422,6 +592,7 @@ fun bottomSheetContent(
     }
 }
 
+@ExperimentalComposeUiApi
 @ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Composable
@@ -432,7 +603,7 @@ fun SingleViewContentStateful(
     navigate: (String) -> Unit
 ) {
     val currentComic = singleViewModel.currentComic.value
-    val currentNumber = singleViewModel.currentNumber.value
+    val currentNumber = singleViewModel.currentNumber
     val favList = mainViewModel.favoriteListFlow.collectAsState(initial = listOf())
     if (currentComic != null) {
         val favoriteList = favList.value
@@ -445,7 +616,7 @@ fun SingleViewContentStateful(
             imageLoaded = singleViewModel.imageLoaded.value,
             setFavorite = mainViewModel::addFavorite,
             removeFavorite = mainViewModel::removeFavorite,
-            currentNumber = currentNumber,
+            getCurrentNumber = singleViewModel::getCurrentSingleNumber,
             setNumber = setComic,
             maxNumber = mainViewModel.latestComicNumber,
             startActivity = { mainViewModel.startActivity(it) },
@@ -458,6 +629,7 @@ fun SingleViewContentStateful(
     }
 }
 
+@ExperimentalComposeUiApi
 @ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Preview
@@ -478,7 +650,7 @@ fun SinglePreview() {
             isFavorite = true,
             DateFormat.getDateInstance(),
             false,
-            2524,
+            {2524},
             2526,
             {},
             {},
