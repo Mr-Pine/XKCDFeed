@@ -17,6 +17,7 @@ class SingleComicViewModel: ViewModel() {
     fun setImageLoaded(loaded: Boolean){imageLoaded.value = loaded}
 
     fun setComic(number: Int, context: Context){
+        Log.d(TAG, "setComic: $number")
         imageLoaded.value = false
         currentNumber.value = number
 

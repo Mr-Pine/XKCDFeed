@@ -2,6 +2,7 @@ package de.mrpine.xkcdfeed.composables.single
 
 import android.content.Intent
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,6 +11,7 @@ import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -26,8 +29,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -52,6 +57,7 @@ import kotlin.random.Random
 
 private const val TAG = "Single"
 
+@ExperimentalComposeUiApi
 @ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Composable
@@ -71,6 +77,8 @@ fun SingleViewContent(
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val orientation = LocalConfiguration.current.orientation
     LaunchedEffect(key1 = Unit, block = {
         if (orientation == Configuration.ORIENTATION_PORTRAIT && scaffoldState.bottomSheetState.isCollapsed)
@@ -78,7 +86,7 @@ fun SingleViewContent(
     })
 
     var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
-
+    Log.d(TAG, "SingleViewContent: $currentNumber")
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         topBar = {
@@ -103,7 +111,7 @@ fun SingleViewContent(
                         value = currentNumber.toString(),
                         modifier = Modifier
                             .width(100.dp),
-                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                         onValueChange = { setNumber(it.toInt()) },
                         colors = TextFieldDefaults.outlinedTextFieldColors(
                             unfocusedBorderColor = Color.White,
@@ -111,7 +119,11 @@ fun SingleViewContent(
                             cursorColor = Color.White,
                             backgroundColor = MaterialTheme.colors.primaryVariant
                         ),
-                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)
+                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+                        keyboardActions = KeyboardActions(onDone = {
+                            keyboardController?.hide()
+
+                        })
                     )
                     IconButton(
                         onClick = { setNumber(currentNumber + 1) },
@@ -156,10 +168,18 @@ fun SingleViewContent(
                 val bitmap =
                     if (MaterialTheme.colors.isLight) comic.bitmapLight else comic.bitmapDark
                 if (bitmap != null) {
+                    Log.d(TAG, "SingleViewContent: bf img $currentNumber")
                     ZoomableImage(
                         bitmap = bitmap.asImageBitmap(),
-                        { if (currentNumber < maxNumber) setNumber(currentNumber + 1) },
-                        { if (currentNumber > 0) setNumber(currentNumber - 1) },
+                        {current ->  if (current < maxNumber) setNumber(current + 1); Log.d(
+                            TAG,
+                            "SingleViewContent: currentNumber: $current, maxNumber: $maxNumber"
+                        ) },
+                        {current -> if (current > 0) setNumber(current - 1); Log.d(
+                            TAG,
+                            "SingleViewContent: currentNumber: $current"
+                        ) },
+                        currentNumber = currentNumber
                     )
                 }
             } else {
@@ -173,9 +193,11 @@ fun SingleViewContent(
 @Composable
 fun ZoomableImage(
     bitmap: ImageBitmap,
-    onSwipeLeft: () -> Unit,
-    onSwipeRight: () -> Unit,
+    onSwipeLeft: (Int) -> Unit,
+    onSwipeRight: (Int) -> Unit,
+    currentNumber: Int
 ) {
+    Log.d(TAG, "ZoomableImage: $currentNumber")
     val maxScale = 0.030F
     val minScale = 10F
     val scope = rememberCoroutineScope()
@@ -309,53 +331,96 @@ fun ZoomableImage(
                         var overSlop = Offset.Zero
 
                         val down = awaitFirstDown(requireUnconsumed = false)
+
+                        do {
+                            Log.d(TAG, "ZoomableImage: drag")
+                            drag = awaitTouchSlopOrCancellation(down.id) { change, over ->
+                                change.consumePositionChange()
+                                overSlop = over
+                            }
+                        } while (drag != null && !drag.positionChangeConsumed())
+                        if (drag != null) {
+                            dragOffset = Offset.Zero
+                            if (scale !in 0.92f..1.08f) {
+                                offset += overSlop
+                            } else {
+                                dragOffset += overSlop
+                            }
+                            if (drag(drag.id) {
+                                    Log.d(TAG, "ZoomableImage: $scale")
+                                    if (scale !in 0.92f..1.08f) {
+                                        offset += it.positionChange()
+                                    } else {
+                                        dragOffset += it.positionChange()
+                                    }
+                                    it.consumePositionChange()
+                                }
+                            ) {
+                                Log.d(TAG, "ZoomableImage: end")
+                                if (scale in 0.92f..1.08f) {
+                                    Log.d(TAG, "ZoomableImage: in end if")
+                                    val offsetX = dragOffset.x
+                                    if (offsetX > 300) {
+                                        Log.d(TAG, "ZoomableImage: right, current: $currentNumber")
+                                        onSwipeRight(currentNumber)
+                                    } else if (offsetX < -300) {
+                                        Log.d(TAG, "ZoomableImage: left, current: $currentNumber")
+                                        onSwipeLeft(currentNumber)
+                                    }
+                                }
+                            }
+                        }
+
                         do {
                             val event = awaitPointerEvent()
                             val canceled = event.changes.fastAny { it.positionChangeConsumed() }
-                            if (!canceled) {
-                                val zoomChange = event.calculateZoom()
-                                val rotationChange = event.calculateRotation()
-                                val panChange = event.calculatePan()
+                            if (event.changes.size > 1) {
+                                if (!canceled) {
+                                    val zoomChange = event.calculateZoom()
+                                    val rotationChange = event.calculateRotation()
+                                    val panChange = event.calculatePan()
 
-                                if (!pastTouchSlop) {
-                                    zoom *= zoomChange
-                                    transformRotation += rotationChange
-                                    pan += panChange
+                                    if (!pastTouchSlop) {
+                                        zoom *= zoomChange
+                                        transformRotation += rotationChange
+                                        pan += panChange
 
-                                    val centroidSize =
-                                        event.calculateCentroidSize(useCurrent = false)
-                                    val zoomMotion = abs(1 - zoom) * centroidSize
-                                    val rotationMotion =
-                                        abs(transformRotation * PI.toFloat() * centroidSize / 180f)
-                                    val panMotion = pan.getDistance()
+                                        val centroidSize =
+                                            event.calculateCentroidSize(useCurrent = false)
+                                        val zoomMotion = abs(1 - zoom) * centroidSize
+                                        val rotationMotion =
+                                            abs(transformRotation * PI.toFloat() * centroidSize / 180f)
+                                        val panMotion = pan.getDistance()
 
-                                    if (zoomMotion > touchSlop ||
-                                        rotationMotion > touchSlop ||
-                                        panMotion > touchSlop
-                                    ) {
-                                        pastTouchSlop = true
-                                        lockedToPanZoom = panZoomLock && rotationMotion < touchSlop
+                                        if (zoomMotion > touchSlop ||
+                                            rotationMotion > touchSlop ||
+                                            panMotion > touchSlop
+                                        ) {
+                                            pastTouchSlop = true
+                                            lockedToPanZoom =
+                                                panZoomLock && rotationMotion < touchSlop
+                                        }
                                     }
-                                }
 
-                                if (pastTouchSlop) {
-                                    val centroid = event.calculateCentroid(useCurrent = false)
-                                    val effectiveRotation =
-                                        if (lockedToPanZoom) 0f else rotationChange
-                                    if (effectiveRotation != 0f ||
-                                        zoomChange != 1f ||
-                                        panChange != Offset.Zero
-                                    ) {
-                                        onTransformGesture(
-                                            centroid,
-                                            panChange,
-                                            zoomChange,
-                                            effectiveRotation
-                                        )
-                                    }
-                                    event.changes.fastForEach {
-                                        if (it.positionChanged()) {
-                                            it.consumeAllChanges()
+                                    if (pastTouchSlop) {
+                                        val centroid = event.calculateCentroid(useCurrent = false)
+                                        val effectiveRotation =
+                                            if (lockedToPanZoom) 0f else rotationChange
+                                        if (effectiveRotation != 0f ||
+                                            zoomChange != 1f ||
+                                            panChange != Offset.Zero
+                                        ) {
+                                            onTransformGesture(
+                                                centroid,
+                                                panChange,
+                                                zoomChange,
+                                                effectiveRotation
+                                            )
+                                        }
+                                        event.changes.fastForEach {
+                                            if (it.positionChanged()) {
+                                                it.consumeAllChanges()
+                                            }
                                         }
                                     }
                                 }
@@ -527,6 +592,7 @@ fun bottomSheetContent(
     }
 }
 
+@ExperimentalComposeUiApi
 @ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Composable
@@ -563,6 +629,7 @@ fun SingleViewContentStateful(
     }
 }
 
+@ExperimentalComposeUiApi
 @ExperimentalFoundationApi
 @ExperimentalMaterialApi
 @Preview

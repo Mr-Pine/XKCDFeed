@@ -3,6 +3,7 @@ package de.mrpine.xkcdfeed
 import android.content.Context
 import android.os.Bundle
 import android.text.format.DateFormat
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -85,7 +86,10 @@ class MainActivity : ComponentActivity() {
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
-                            setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
+                            setComic = { singleComicViewModel.setComic(it, this@MainActivity); Log.d(
+                                TAG,
+                                "onCreate: setting comic to $it, current number now ${singleComicViewModel.currentNumber.value}"
+                            ) },
                             navigate = navController::navigate
                         )
                     }
