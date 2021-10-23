@@ -66,7 +66,7 @@ fun SingleViewContent(
     isFavorite: Boolean,
     dateFormat: DateFormat,
     imageLoaded: Boolean,
-    currentNumber: Int,
+    getCurrentNumber: () -> Int,
     maxNumber: Int,
     setNumber: (Int) -> Unit,
     setFavorite: (XKCDComic) -> Unit,
@@ -85,8 +85,9 @@ fun SingleViewContent(
             scaffoldState.bottomSheetState.expand()
     })
 
+    val currentNumber = getCurrentNumber()
+
     var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
-    Log.d(TAG, "SingleViewContent: $currentNumber")
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         topBar = {
@@ -168,18 +169,11 @@ fun SingleViewContent(
                 val bitmap =
                     if (MaterialTheme.colors.isLight) comic.bitmapLight else comic.bitmapDark
                 if (bitmap != null) {
-                    Log.d(TAG, "SingleViewContent: bf img $currentNumber")
                     ZoomableImage(
                         bitmap = bitmap.asImageBitmap(),
-                        {current ->  if (current < maxNumber) setNumber(current + 1); Log.d(
-                            TAG,
-                            "SingleViewContent: currentNumber: $current, maxNumber: $maxNumber"
-                        ) },
-                        {current -> if (current > 0) setNumber(current - 1); Log.d(
-                            TAG,
-                            "SingleViewContent: currentNumber: $current"
-                        ) },
-                        currentNumber = currentNumber
+                        {current ->  if (current < maxNumber) setNumber(current + 1) },
+                        {current -> if (current > 0) setNumber(current - 1) },
+                        getCurrentNumber = getCurrentNumber
                     )
                 }
             } else {
@@ -195,9 +189,8 @@ fun ZoomableImage(
     bitmap: ImageBitmap,
     onSwipeLeft: (Int) -> Unit,
     onSwipeRight: (Int) -> Unit,
-    currentNumber: Int
+    getCurrentNumber: () -> Int
 ) {
-    Log.d(TAG, "ZoomableImage: $currentNumber")
     val maxScale = 0.030F
     val minScale = 10F
     val scope = rememberCoroutineScope()
@@ -210,7 +203,7 @@ fun ZoomableImage(
         rotation += rotationChange
         offset += offsetChange
     }
-    var centoid by remember { mutableStateOf(Offset(1f, 1f)) }
+    var centroid by remember { mutableStateOf(Offset(1f, 1f)) }
 
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     var imageCenter by remember { mutableStateOf(Offset.Zero) }
@@ -226,10 +219,10 @@ fun ZoomableImage(
         scale *= zoom
         rotation += transformRotation
 
-        centoid = transformCentroid
+        centroid = transformCentroid
 
-        val x0 = centoid.x - imageCenter.x
-        val y0 = centoid.y - imageCenter.y
+        val x0 = centroid.x - imageCenter.x
+        val y0 = centroid.y - imageCenter.y
 
         val hyp0 = sqrt(x0 * x0 + y0 * y0)
         val hyp1 = zoom * hyp0 * (if (x0 > 0) {
@@ -246,7 +239,7 @@ fun ZoomableImage(
         val y1 = sin(alpha1) * hyp1
 
         transformOffset =
-            centoid - (imageCenter - offset) - Offset(x1.toFloat(), y1.toFloat())
+            centroid - (imageCenter - offset) - Offset(x1.toFloat(), y1.toFloat())
         offset = transformOffset
     }
 
@@ -269,6 +262,7 @@ fun ZoomableImage(
                     }
                 )
             }
+            //<editor-fold desc="old code">
             /*.pointerInput(Unit) {
                 detectTransformGestures(true) { transformCentroid, pan, zoom, transformRotation ->
                     offset += pan
@@ -317,6 +311,7 @@ fun ZoomableImage(
                     }
                 }
             }*/
+            //</editor-fold>
             .pointerInput(Unit) {
                 val panZoomLock = true
                 forEachGesture {
@@ -358,14 +353,14 @@ fun ZoomableImage(
                             ) {
                                 Log.d(TAG, "ZoomableImage: end")
                                 if (scale in 0.92f..1.08f) {
-                                    Log.d(TAG, "ZoomableImage: in end if")
                                     val offsetX = dragOffset.x
                                     if (offsetX > 300) {
-                                        Log.d(TAG, "ZoomableImage: right, current: $currentNumber")
-                                        onSwipeRight(currentNumber)
+                                        Log.d(TAG, "ZoomableImage: right, number: ${getCurrentNumber()}")
+                                        onSwipeRight(getCurrentNumber())
+
                                     } else if (offsetX < -300) {
-                                        Log.d(TAG, "ZoomableImage: left, current: $currentNumber")
-                                        onSwipeLeft(currentNumber)
+                                        Log.d(TAG, "ZoomableImage: left, number: ${getCurrentNumber()}")
+                                        onSwipeLeft(getCurrentNumber())
                                     }
                                 }
                             }
@@ -603,7 +598,7 @@ fun SingleViewContentStateful(
     navigate: (String) -> Unit
 ) {
     val currentComic = singleViewModel.currentComic.value
-    val currentNumber = singleViewModel.currentNumber.value
+    val currentNumber = singleViewModel.currentNumber
     val favList = mainViewModel.favoriteListFlow.collectAsState(initial = listOf())
     if (currentComic != null) {
         val favoriteList = favList.value
@@ -616,7 +611,7 @@ fun SingleViewContentStateful(
             imageLoaded = singleViewModel.imageLoaded.value,
             setFavorite = mainViewModel::addFavorite,
             removeFavorite = mainViewModel::removeFavorite,
-            currentNumber = currentNumber,
+            getCurrentNumber = singleViewModel::getCurrentSingleNumber,
             setNumber = setComic,
             maxNumber = mainViewModel.latestComicNumber,
             startActivity = { mainViewModel.startActivity(it) },
@@ -650,7 +645,7 @@ fun SinglePreview() {
             isFavorite = true,
             DateFormat.getDateInstance(),
             false,
-            2524,
+            {2524},
             2526,
             {},
             {},

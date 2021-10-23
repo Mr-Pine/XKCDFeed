@@ -2,8 +2,10 @@ package de.mrpine.xkcdfeed
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
@@ -11,15 +13,18 @@ private const val TAG = "SingleComicViewModel"
 
 class SingleComicViewModel: ViewModel() {
     val currentComic = mutableStateOf<XKCDComic?>(null)
-    val currentNumber = mutableStateOf(-1)
+    var currentNumber by mutableStateOf(-1)
     val imageLoaded = mutableStateOf(true)
+
+    fun getCurrentSingleNumber(): Int {
+        return currentNumber
+    }
 
     fun setImageLoaded(loaded: Boolean){imageLoaded.value = loaded}
 
     fun setComic(number: Int, context: Context){
-        Log.d(TAG, "setComic: $number")
         imageLoaded.value = false
-        currentNumber.value = number
+        currentNumber = number
 
         val cachedComic = comicCache[number]
         if(cachedComic == null) {
@@ -45,7 +50,7 @@ class SingleComicViewModel: ViewModel() {
 
     fun setComic(comic: XKCDComic){
         imageLoaded.value = true
-        currentNumber.value = comic.id
+        currentNumber = comic.id
         currentComic.value = comic
     }
 }

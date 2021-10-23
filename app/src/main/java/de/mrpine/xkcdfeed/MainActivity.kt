@@ -3,13 +3,13 @@ package de.mrpine.xkcdfeed
 import android.content.Context
 import android.os.Bundle
 import android.text.format.DateFormat
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
@@ -35,6 +35,7 @@ val Context.userDataStore: DataStore<Preferences> by preferencesDataStore(name =
 @ExperimentalMaterialApi
 class MainActivity : ComponentActivity() {
 
+    @ExperimentalComposeUiApi
     @ExperimentalFoundationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,10 +87,7 @@ class MainActivity : ComponentActivity() {
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
-                            setComic = { singleComicViewModel.setComic(it, this@MainActivity); Log.d(
-                                TAG,
-                                "onCreate: setting comic to $it, current number now ${singleComicViewModel.currentNumber.value}"
-                            ) },
+                            setComic = { singleComicViewModel.setComic(it, this@MainActivity)},
                             navigate = navController::navigate
                         )
                     }
