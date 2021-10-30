@@ -93,7 +93,6 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = "mainView") {
                     composable("mainView", deepLinks = listOf(navDeepLink { uriPattern = rootUri })) {
                         MainContent(mainViewModel) {
-                            singleComicViewModel.setComic(it)
                             navController.navigate("singleView/${it.id}")
                         }
                     }
@@ -105,6 +104,7 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
 
                         val comicNumber = backStackEntry.arguments?.getInt("number")
+                        singleComicViewModel.setComic(comicNumber ?: mainViewModel.latestComicNumber, this@MainActivity)
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
