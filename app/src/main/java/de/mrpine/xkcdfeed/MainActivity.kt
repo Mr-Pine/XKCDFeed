@@ -29,8 +29,8 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import de.mrpine.xkcdfeed.composables.main.MainContent
 import de.mrpine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 private const val TAG = "MainActivity"
 
@@ -40,6 +40,7 @@ val Context.userDataStore: DataStore<Preferences> by preferencesDataStore(name =
 @ExperimentalMaterialApi
 class MainActivity : ComponentActivity() {
 
+    @ObsoleteCoroutinesApi
     @ExperimentalFoundationApi
     @ExperimentalComposeUiApi
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,11 +80,12 @@ class MainActivity : ComponentActivity() {
             if (mainViewModel.latestComicsList.isEmpty()) {
                 mainViewModel.addLatestComics(4, this)
 
-                scope.launch {
+                scope.launch (Dispatchers.IO){
                     val favList = mainViewModel.favoriteListFlow.first()
                     for (i in favList) {
-                        mainViewModel.addComic(i, this@MainActivity, MainViewModel.Tab.FAVORITES)
+                        mainViewModel.addComicSync(i, this@MainActivity, MainViewModel.Tab.FAVORITES)
                     }
+                    Log.d(TAG, "onCreate: ${Thread.currentThread().name}")
                 }
             }
 

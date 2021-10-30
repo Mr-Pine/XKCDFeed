@@ -12,6 +12,7 @@ import com.android.volley.VolleyError
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.IOException
@@ -37,7 +38,7 @@ class XKCDComic(
     private val TAG = "XKCDComic"
 
     init {
-        coroutineScope.launch {
+        coroutineScope.launch (Dispatchers.IO) {
             bitmapLight = getBitmapFromURL(imageURL)
             bitmapDark = convertToDarkImage(bitmapLight, onImageLoaded)
         }
@@ -68,13 +69,15 @@ class XKCDComic(
             onImageLoaded: () -> Unit,
             saveComic: (XKCDComic) -> Unit
         ) {
-            getHttpJSON("https://xkcd.com/$number/info.0.json", context) {
-                generateComic(
-                    it,
-                    coroutineScope,
-                    onImageLoaded,
-                    saveComic
-                )
+            coroutineScope.launch (Dispatchers.IO){
+                getHttpJSON("https://xkcd.com/$number/info.0.json", context, coroutineScope) {
+                    generateComic(
+                        it,
+                        coroutineScope,
+                        onImageLoaded,
+                        saveComic
+                    )
+                }
             }
         }
 
@@ -109,8 +112,8 @@ class XKCDComic(
     }
 }
 
-fun getHttpJSON(
-    getURL: String, context: Context, onError: (VolleyError) -> Unit = {
+fun getHttpJSON (
+    getURL: String, context: Context, coroutineScope: CoroutineScope, onError: (VolleyError) -> Unit = {
         Log.e(
             "XKCDComic.kt",
             "getHttpJson: ${it.message}",
@@ -120,16 +123,18 @@ fun getHttpJSON(
 ) {
 
     // Instantiate the RequestQueue with the cache and network. Start the queue.
-    val requestQueue = Volley.newRequestQueue(context)
-    val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
-    StrictMode.setThreadPolicy(policy)
-    val jsonObjectRequest = JsonObjectRequest(
-        Request.Method.GET, getURL, null,
-        returnFunction,
-        onError
-    )
+    coroutineScope.launch (Dispatchers.IO) {
+        val requestQueue = Volley.newRequestQueue(context)
+        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
+        StrictMode.setThreadPolicy(policy)
+        val jsonObjectRequest = JsonObjectRequest(
+            Request.Method.GET, getURL, null,
+            returnFunction,
+            onError
+        )
 
-    requestQueue.add(jsonObjectRequest)
+        requestQueue.add(jsonObjectRequest)
+    }
 
 }
 
