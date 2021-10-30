@@ -1,8 +1,12 @@
 package de.mrpine.xkcdfeed
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.text.format.DateFormat
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -20,6 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.google.accompanist.pager.ExperimentalPagerApi
 import de.mrpine.xkcdfeed.composables.main.MainContent
 import de.mrpine.xkcdfeed.composables.single.SingleViewContentStateful
@@ -35,10 +40,24 @@ val Context.userDataStore: DataStore<Preferences> by preferencesDataStore(name =
 @ExperimentalMaterialApi
 class MainActivity : ComponentActivity() {
 
-    @ExperimentalComposeUiApi
     @ExperimentalFoundationApi
+    @ExperimentalComposeUiApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate: ${intent.data}")
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Create the NotificationChannel
+            val name = getString(R.string.new_comic_channel_name)
+            val descriptionText = getString(R.string.new_comic_channel_description)
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val mChannel = NotificationChannel(getString(R.string.new_comic_channel_id), name, importance)
+            mChannel.description = descriptionText
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(mChannel)
+        }
 
         setContent {
             val scope = rememberCoroutineScope()
@@ -70,8 +89,9 @@ class MainActivity : ComponentActivity() {
 
 
             XKCDFeedTheme {
+                val rootUri = "https://www.xkcd.com"
                 NavHost(navController = navController, startDestination = "mainView") {
-                    composable("mainView") {
+                    composable("mainView", deepLinks = listOf(navDeepLink { uriPattern = rootUri })) {
                         MainContent(mainViewModel) {
                             singleComicViewModel.setComic(it)
                             navController.navigate("singleView/${it.id}")
@@ -80,7 +100,8 @@ class MainActivity : ComponentActivity() {
                     composable("test") { Text("hello") }
                     composable(
                         route = "singleView/{number}",
-                        arguments = listOf(navArgument("number") { type = NavType.IntType })
+                        arguments = listOf(navArgument("number") { type = NavType.IntType }),
+                        deepLinks = listOf(navDeepLink { uriPattern = "$rootUri/{number}" })
                     ) { backStackEntry ->
 
                         val comicNumber = backStackEntry.arguments?.getInt("number")
