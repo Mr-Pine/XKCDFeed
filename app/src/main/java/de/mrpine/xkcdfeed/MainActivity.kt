@@ -26,6 +26,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.ktx.messaging
 import de.mrpine.xkcdfeed.composables.main.MainContent
 import de.mrpine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
@@ -59,6 +61,8 @@ class MainActivity : ComponentActivity() {
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(mChannel)
         }
+
+        Firebase.messaging.subscribeToTopic("newComic")
 
         setContent {
             val scope = rememberCoroutineScope()
