@@ -2,7 +2,6 @@ package de.mrpine.xkcdfeed.composables.single
 
 import android.content.Intent
 import android.content.res.Configuration
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -191,8 +190,6 @@ fun ZoomableImage(
     onSwipeRight: (Int) -> Unit,
     getCurrentNumber: () -> Int
 ) {
-    val maxScale = 0.030F
-    val minScale = 10F
     val scope = rememberCoroutineScope()
 
     var scale by remember { mutableStateOf(1f) }
@@ -203,14 +200,13 @@ fun ZoomableImage(
         rotation += rotationChange
         offset += offsetChange
     }
-    var centroid by remember { mutableStateOf(Offset(1f, 1f)) }
 
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     var imageCenter by remember { mutableStateOf(Offset.Zero) }
     var transformOffset by remember { mutableStateOf(Offset.Zero) }
 
     fun onTransformGesture(
-        transformCentroid: Offset,
+        centroid: Offset,
         pan: Offset,
         zoom: Float,
         transformRotation: Float
@@ -218,8 +214,6 @@ fun ZoomableImage(
         offset += pan
         scale *= zoom
         rotation += transformRotation
-
-        centroid = transformCentroid
 
         val x0 = centroid.x - imageCenter.x
         val y0 = centroid.y - imageCenter.y
@@ -389,7 +383,6 @@ fun ZoomableImage(
 
                         do {
                             val event = awaitPointerEvent()
-                            Log.d(TAG, "ZoomableImage: drag, event changes Size: ${event.changes.size}")
                             drag = awaitTouchSlopOrCancellation(down.id) { change, over ->
                                 change.consumePositionChange()
                                 overSlop = over
@@ -403,7 +396,6 @@ fun ZoomableImage(
                                 dragOffset += overSlop
                             }
                             if (drag(drag.id) {
-                                    Log.d(TAG, "ZoomableImage: $scale")
                                     if (scale !in 0.92f..1.08f) {
                                         offset += it.positionChange()
                                     } else {
@@ -412,15 +404,12 @@ fun ZoomableImage(
                                     it.consumePositionChange()
                                 }
                             ) {
-                                Log.d(TAG, "ZoomableImage: end")
                                 if (scale in 0.92f..1.08f) {
                                     val offsetX = dragOffset.x
                                     if (offsetX > 300) {
-                                        Log.d(TAG, "ZoomableImage: right, number: ${getCurrentNumber()}")
                                         onSwipeRight(getCurrentNumber())
 
                                     } else if (offsetX < -300) {
-                                        Log.d(TAG, "ZoomableImage: left, number: ${getCurrentNumber()}")
                                         onSwipeLeft(getCurrentNumber())
                                     }
                                 }
