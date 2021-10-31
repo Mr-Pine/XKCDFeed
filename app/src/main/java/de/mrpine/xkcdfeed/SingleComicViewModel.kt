@@ -32,20 +32,25 @@ class SingleComicViewModel: ViewModel() {
                 number = number,
                 context = context,
                 coroutineScope = viewModelScope,
-                onImageLoaded = { imageLoaded.value = true }) {
+                onImageLoaded = { imageLoaded.value = true; comicCache[number]!!.imageLoaded = true}) {
                 currentComic.value = it
-                comicCache[number] = it
+                comicCache[number] = XKCDCacheObject(it, false)
             }
         } else {
             Log.d(TAG, "setComic: got from cache")
-            setComic(cachedComic)
+            setComic(cachedComic.comic)
+            imageLoaded.value = cachedComic.imageLoaded
         }
     }
     
-    private val comicCache = mutableStateMapOf<Int, XKCDComic>()
+    private val comicCache = mutableStateMapOf<Int, XKCDCacheObject>()
     
-    fun addToComicCache(comic: XKCDComic){
-        comicCache[comic.id] = comic
+    fun addToComicCache(comic: XKCDComic, imageLoaded: Boolean){
+        comicCache[comic.id] = XKCDCacheObject(comic, imageLoaded)
+    }
+
+    fun setComicCacheImageLoaded(number: Int, imageLoaded: Boolean){
+        comicCache[number]!!.imageLoaded = imageLoaded
     }
 
     fun setComic(comic: XKCDComic){
@@ -54,3 +59,5 @@ class SingleComicViewModel: ViewModel() {
         currentComic.value = comic
     }
 }
+
+data class XKCDCacheObject(val comic: XKCDComic, var imageLoaded: Boolean)

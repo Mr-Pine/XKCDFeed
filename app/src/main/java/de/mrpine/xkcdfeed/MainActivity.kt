@@ -77,7 +77,8 @@ class MainActivity : ComponentActivity() {
                     DateFormat.getDateFormat(this),
                     this::startActivity,
                     navController::navigate,
-                    singleComicViewModel::addToComicCache
+                    singleComicViewModel::addToComicCache,
+                    singleComicViewModel::setComicCacheImageLoaded
                 )
             ).get(MainViewModel::class.java)
 

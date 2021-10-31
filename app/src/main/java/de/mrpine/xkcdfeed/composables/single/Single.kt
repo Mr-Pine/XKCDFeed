@@ -2,6 +2,7 @@ package de.mrpine.xkcdfeed.composables.single
 
 import android.content.Intent
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -160,7 +161,7 @@ fun SingleViewContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(if(MaterialTheme.colors.isLight) Color.White else Color.Black)
+                .background(if (MaterialTheme.colors.isLight) Color.White else Color.Black)
                 .padding(bottom = with(LocalDensity.current) { (parentSize.height - scaffoldState.bottomSheetState.offset.value).toDp() }),
             contentAlignment = Alignment.Center
         ) {
@@ -306,7 +307,8 @@ fun ZoomableImage(
                                     }
 
                                     if (pastTouchSlop) {
-                                        val eventCentroid = event.calculateCentroid(useCurrent = false)
+                                        val eventCentroid =
+                                            event.calculateCentroid(useCurrent = false)
                                         val effectiveRotation =
                                             if (lockedToPanZoom) 0f else rotationChange
                                         if (effectiveRotation != 0f ||
@@ -541,6 +543,7 @@ fun SingleViewContentStateful(
     setComic: (Int) -> Unit,
     navigate: (String) -> Unit
 ) {
+    Log.d(TAG, "SingleViewContentStateful: ${singleViewModel.imageLoaded.value}")
     val currentComic = singleViewModel.currentComic.value
     val currentNumber = singleViewModel.currentNumber
     val favList = mainViewModel.favoriteListFlow.collectAsState(initial = listOf())

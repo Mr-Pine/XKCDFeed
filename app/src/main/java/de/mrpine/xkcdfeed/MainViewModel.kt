@@ -28,7 +28,8 @@ class MainViewModel(
     val dateFormat: DateFormat,
     val startActivity: (Intent) -> Unit,
     val navigateTo: (String) -> Unit,
-    private val addToComicCache: (XKCDComic) -> Unit
+    private val addToComicCache: (XKCDComic, Boolean) -> Unit,
+    private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
 ) : ViewModel() {
     private val TAG = "MainViewModel"
 
@@ -169,13 +170,14 @@ class MainViewModel(
             onImageLoaded = {
                 (if (to == Tab.LATEST) latestImagesLoadedMap else favoriteImagesLoadedMap)[number] =
                     true
+                setComicCacheImageLoaded(number, true)
             }) {
             if (to == Tab.LATEST) {
                 addToLatestComicList(it)
             } else {
                 addToFavoriteComicList(it)
             }
-            addToComicCache(it)
+            addToComicCache(it, false)
         }
     }
     //</editor-fold>
@@ -215,7 +217,8 @@ class MainViewModelFactory(
     private val dateFormat: DateFormat,
     private val startActivity: (Intent) -> Unit,
     private val navigateTo: (String) -> Unit,
-    private val addToComicCache: (XKCDComic) -> Unit
+    private val addToComicCache: (XKCDComic, Boolean) -> Unit,
+    private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
 ) :
     ViewModelProvider.Factory {
 
@@ -227,7 +230,8 @@ class MainViewModelFactory(
                 dateFormat,
                 startActivity,
                 navigateTo,
-                addToComicCache
+                addToComicCache,
+                setComicCacheImageLoaded
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
