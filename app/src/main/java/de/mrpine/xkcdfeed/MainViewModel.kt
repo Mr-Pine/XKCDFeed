@@ -16,9 +16,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import org.json.JSONArray
 import java.text.DateFormat
 
@@ -157,8 +157,11 @@ class MainViewModel(
         }
     }
 
-    private fun addComicSync(number: Int, context: Context, to: Tab) {
-        (if (to == Tab.LATEST) latestImagesLoadedMap else favoriteImagesLoadedMap)[number] = false
+    suspend fun addComicSync(number: Int, context: Context, to: Tab) {
+        withContext(Dispatchers.Main) {
+            (if (to == Tab.LATEST) latestImagesLoadedMap else favoriteImagesLoadedMap)[number] =
+                false
+        }
         XKCDComic.getComic(
             number = number,
             coroutineScope = viewModelScope,
@@ -179,9 +182,10 @@ class MainViewModel(
 
 
     //<editor-fold desc="Helper function to load all latest comics into the list">
+    @ObsoleteCoroutinesApi
     fun addLatestComics(count: Int, context: Context) {
-        viewModelScope.launch {
-            getHttpJSON("https://xkcd.com/info.0.json", context) {
+        getHttpJSON("https://xkcd.com/info.0.json", context, viewModelScope) {
+            viewModelScope.launch(newSingleThreadContext("yes hello")) {
                 val number = it.getInt("num")
                 latestComicNumber = number
                 for (i in number downTo (number - (count - 1))) {
@@ -195,8 +199,8 @@ class MainViewModel(
     //<editor-fold desc="Fav List State">
     val favListState: LazyListState = LazyListState()
 
-    suspend fun scrollToFavItem(index: Int){
-            favListState.animateScrollToItem(index = index)
+    suspend fun scrollToFavItem(index: Int) {
+        favListState.animateScrollToItem(index = index)
     }
     //</editor-fold>
 
@@ -218,7 +222,13 @@ class MainViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(userDataStore, dateFormat, startActivity, navigateTo, addToComicCache) as T
+            return MainViewModel(
+                userDataStore,
+                dateFormat,
+                startActivity,
+                navigateTo,
+                addToComicCache
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

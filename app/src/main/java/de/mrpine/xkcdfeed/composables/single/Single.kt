@@ -256,56 +256,6 @@ fun ZoomableImage(
                     }
                 )
             }
-            //<editor-fold desc="old code">
-            /*.pointerInput(Unit) {
-                detectTransformGestures(true) { transformCentroid, pan, zoom, transformRotation ->
-                    offset += pan
-                    scale *= zoom
-                    rotation += transformRotation
-
-                    centoid = transformCentroid
-
-                    val x0 = centoid.x - imageCenter.x
-                    val y0 = centoid.y - imageCenter.y
-
-                    val hyp0 = sqrt(x0 * x0 + y0 * y0)
-                    val hyp1 = zoom * hyp0 * (if (x0 > 0) {
-                        1f
-                    } else {
-                        -1f
-                    })
-
-                    val alpha0 = atan(y0 / x0)
-
-                    val alpha1 = alpha0 + (transformRotation * ((2 * PI) / 360))
-
-                    val x1 = cos(alpha1) * hyp1
-                    val y1 = sin(alpha1) * hyp1
-
-                    transformOffset =
-                        centoid - (imageCenter - offset) - Offset(x1.toFloat(), y1.toFloat())
-                    offset = transformOffset
-                }
-            }
-            .pointerInput(Unit) {
-                detectDragGestures(onDragStart = { dragOffset = Offset.Zero }, onDragEnd = {
-                    if (scale in 0.92f..1.08f) {
-                        val offsetX = dragOffset.x
-                        if (offsetX > 300) {
-                            onSwipeRight()
-                        } else if (offsetX < -300) {
-                            onSwipeLeft()
-                        }
-                    }
-                }) { _, dragAmount ->
-                    if (scale !in 0.92f..1.08f) {
-                        offset += dragAmount
-                    } else {
-                        dragOffset += dragAmount
-                    }
-                }
-            }*/
-            //</editor-fold>
             .pointerInput(Unit) {
                 val panZoomLock = true
                 forEachGesture {
