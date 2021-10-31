@@ -160,7 +160,7 @@ fun SingleViewContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(if(MaterialTheme.colors.isLight) Color.White else Color.Black)
                 .padding(bottom = with(LocalDensity.current) { (parentSize.height - scaffoldState.bottomSheetState.offset.value).toDp() }),
             contentAlignment = Alignment.Center
         ) {
