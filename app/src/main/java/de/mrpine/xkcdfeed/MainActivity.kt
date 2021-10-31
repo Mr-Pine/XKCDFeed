@@ -38,13 +38,10 @@ private const val TAG = "MainActivity"
 
 val Context.userDataStore: DataStore<Preferences> by preferencesDataStore(name = "user-data")
 
-@ExperimentalPagerApi
-@ExperimentalMaterialApi
+@ExperimentalFoundationApi @ObsoleteCoroutinesApi
+@ExperimentalComposeUiApi@ExperimentalPagerApi @ExperimentalMaterialApi
 class MainActivity : ComponentActivity() {
 
-    @ObsoleteCoroutinesApi
-    @ExperimentalFoundationApi
-    @ExperimentalComposeUiApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate: ${intent.data}")
