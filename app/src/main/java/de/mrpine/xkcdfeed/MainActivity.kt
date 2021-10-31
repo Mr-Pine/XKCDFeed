@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
 
 
             XKCDFeedTheme {
-                val rootUri = "https://www.xkcd.com"
+                val rootUri = "xkcd.com"
                 NavHost(navController = navController, startDestination = "mainView") {
                     composable("mainView", deepLinks = listOf(navDeepLink { uriPattern = rootUri })) {
                         MainContent(mainViewModel) {
