@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed.composables.main
+package de.mr_pine.xkcdfeed.composables.main
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -18,10 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import de.mrpine.xkcdfeed.XKCDComic
-import de.mrpine.xkcdfeed.ui.theme.Amber500
-import de.mrpine.xkcdfeed.ui.theme.Gray400
-import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
+import de.mr_pine.xkcdfeed.XKCDComic
+import de.mr_pine.xkcdfeed.ui.theme.Amber500
+import de.mr_pine.xkcdfeed.ui.theme.Gray400
+import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.*

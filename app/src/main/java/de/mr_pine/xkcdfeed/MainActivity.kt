@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed
+package de.mr_pine.xkcdfeed
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -28,9 +28,9 @@ import androidx.navigation.navDeepLink
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
-import de.mrpine.xkcdfeed.composables.main.MainContent
-import de.mrpine.xkcdfeed.composables.single.SingleViewContentStateful
-import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
+import de.mr_pine.xkcdfeed.composables.main.MainContent
+import de.mr_pine.xkcdfeed.composables.single.SingleViewContentStateful
+import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 

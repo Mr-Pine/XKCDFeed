@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed.composables.single
+package de.mr_pine.xkcdfeed.composables.single
 
 import android.content.Intent
 import android.content.res.Configuration
@@ -42,12 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
-import de.mrpine.xkcdfeed.MainViewModel
-import de.mrpine.xkcdfeed.SingleComicViewModel
-import de.mrpine.xkcdfeed.XKCDComic
-import de.mrpine.xkcdfeed.ui.theme.Amber500
-import de.mrpine.xkcdfeed.ui.theme.Gray400
-import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
+import de.mr_pine.xkcdfeed.MainViewModel
+import de.mr_pine.xkcdfeed.SingleComicViewModel
+import de.mr_pine.xkcdfeed.XKCDComic
+import de.mr_pine.xkcdfeed.ui.theme.Amber500
+import de.mr_pine.xkcdfeed.ui.theme.Gray400
+import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.DateFormat

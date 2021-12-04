@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed
+package de.mr_pine.xkcdfeed
 
 import android.content.Context
 import android.graphics.Bitmap

@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed
+package de.mr_pine.xkcdfeed
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
