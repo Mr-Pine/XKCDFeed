@@ -86,6 +86,7 @@ fun SingleViewContent(
     })
 
     val currentNumber = getCurrentNumber()
+    var currentNumberString by remember(currentNumber) { mutableStateOf(currentNumber.toString()) }
 
     var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
     BottomSheetScaffold(
@@ -109,11 +110,24 @@ fun SingleViewContent(
                         Icon(Icons.Default.ArrowBack, "Previous Comic")
                     }
                     OutlinedTextField(
-                        value = currentNumber.toString(),
+                        value = currentNumberString,
                         modifier = Modifier
                             .width(100.dp),
-                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                        onValueChange = { setNumber(it.toInt()) },
+                        keyboardOptions = KeyboardOptions.Default.copy(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        onValueChange = {
+                            try {
+                                currentNumberString = it.filter {digit -> digit.isDigit() }.takeIf { newString -> newString.toInt() <= maxNumber } ?: currentNumberString
+                                if (currentNumberString != "") {
+                                    val newNumber = currentNumberString.toInt()
+                                    if (newNumber <= maxNumber) setNumber(newNumber)
+                                }
+                            } catch (err: Exception) {
+                                Log.e(TAG, "$it not parsable")
+                            }
+                        },
                         colors = TextFieldDefaults.outlinedTextFieldColors(
                             unfocusedBorderColor = Color.White,
                             focusedBorderColor = Color.White,
@@ -171,8 +185,8 @@ fun SingleViewContent(
                 if (bitmap != null) {
                     ZoomableImage(
                         bitmap = bitmap.asImageBitmap(),
-                        {current ->  if (current < maxNumber) setNumber(current + 1) },
-                        {current -> if (current > 0) setNumber(current - 1) },
+                        { current -> if (current < maxNumber) setNumber(current + 1) },
+                        { current -> if (current > 0) setNumber(current - 1) },
                         getCurrentNumber = getCurrentNumber
                     )
                 }
@@ -592,7 +606,7 @@ fun SinglePreview() {
             isFavorite = true,
             DateFormat.getDateInstance(),
             false,
-            {2524},
+            { 2524 },
             2526,
             {},
             {},
