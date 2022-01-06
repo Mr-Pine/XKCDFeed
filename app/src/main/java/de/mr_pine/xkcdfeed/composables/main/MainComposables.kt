@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +53,7 @@ fun SheetLayout(
     scope: CoroutineScope,
     showSingleComic: (XKCDComic) -> Unit
 ) {
-    val favoriteList = viewModel.favoriteListFlow.collectAsState(initial = listOf()).value
+    val favoriteList = viewModel.favoriteList
     val currentComic = viewModel.currentBottomSheetXKCDComic.value
     val isFav = if (currentComic != null) favoriteList.contains(currentComic.id) else false
     ModalBottomSheetLayout(
@@ -293,7 +292,7 @@ fun Tab2(viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCD
                 viewModel.scrollToFavItem(randomIndex)
             }
         }) {
-            Icon(Icons.Default.Shuffle, "Star")
+            Icon(Icons.Default.Shuffle, "Shuffle")
         }
     }) {
         ComicList(
@@ -328,7 +327,7 @@ fun ComicList(
                 item,
                 viewModel.dateFormat,
                 imagesLoadedMap,
-                viewModel.favoriteListFlow.collectAsState(initial = mutableListOf()).value,
+                viewModel.favoriteList,
                 viewModel::addFavorite,
                 viewModel::removeFavorite,
                 viewModel::showBottomSheet,

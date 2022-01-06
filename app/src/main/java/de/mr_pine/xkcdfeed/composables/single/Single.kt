@@ -560,10 +560,8 @@ fun SingleViewContentStateful(
     Log.d(TAG, "SingleViewContentStateful: ${singleViewModel.imageLoaded.value}")
     val currentComic = singleViewModel.currentComic.value
     val currentNumber = singleViewModel.currentNumber
-    val favList = mainViewModel.favoriteListFlow.collectAsState(initial = listOf())
+    val favoriteList = mainViewModel.favoriteList
     if (currentComic != null) {
-        val favoriteList = favList.value
-
 
         SingleViewContent(
             comic = currentComic,

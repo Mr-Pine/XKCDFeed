@@ -2,6 +2,7 @@ package de.mr_pine.xkcdfeed
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetState
@@ -16,9 +17,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import java.text.DateFormat
 
@@ -28,10 +30,13 @@ class MainViewModel(
     val dateFormat: DateFormat,
     val startActivity: (Intent) -> Unit,
     val navigateTo: (String) -> Unit,
+    private val loginViewModel: LoginViewModel,
     private val addToComicCache: (XKCDComic, Boolean) -> Unit,
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
 ) : ViewModel() {
     private val TAG = "MainViewModel"
+
+    private val db = Firebase.firestore
 
     var latestComicNumber = -1
 
@@ -55,37 +60,91 @@ class MainViewModel(
 
 
     //<editor-fold desc="Favorite List">
-    private val FAVORITE_LIST = stringPreferencesKey("favorite_list")
-    val favoriteListFlow: Flow<List<Int>> = userDataStore.data.map { preferences ->
-        // No type safety.
-        val stringList = preferences[FAVORITE_LIST] ?: "[]"
-        return@map generateListFromJSON(stringList)
+    private val favoriteListKey = stringPreferencesKey("favorite_list")
+
+    var favoriteListInitialized = false
+    var lastClearType = ClearType.UNDEFINED
+    var favoriteList = mutableStateListOf<Int>()
+
+    enum class ClearType{
+        LOCAL, FIREBASE, UNDEFINED
     }
 
-    fun setFavoriteList(favoriteList: List<Int>) {
-        viewModelScope.launch {
-            userDataStore.edit { mutablePreferences ->
-                mutablePreferences[FAVORITE_LIST] =
-                    JSONArray(favoriteList.toTypedArray()).toString()
+    fun initFavoriteList(context: Context, clear: Boolean = false, clearType: ClearType? = null) {
+        if (!favoriteListInitialized || (clear && lastClearType != clearType)) {
+            favoriteListInitialized = true
+            favoriteList.clear()
+            if(clearType != null) lastClearType = clearType
+            viewModelScope.launch {
+                if (!loginViewModel.signedIn) {
+                    userDataStore.data.first { preferences ->
+                        // No type safety.
+                        Log.d(TAG, "initFavoriteList: hi :)")
+                        val stringList = preferences[favoriteListKey] ?: "[]"
+                        favoriteList.addAll(generateListFromJSON(stringList))
+                        addFromFavoritesList(context, clear)
+                        false
+                    }
+                } else {
+                    val favoritesReference =
+                        db.collection("Users/${loginViewModel.user?.uid}/Favorites")
+                    favoritesReference.get().addOnSuccessListener { collection ->
+                        val documents = collection.documents
+                        val listValues = documents.map { documentSnapshot ->
+                            documentSnapshot.id.toInt()
+                        }
+                        Log.d(TAG, "initFavoriteList: hi :) $listValues")
+                        favoriteList.addAll(listValues)
+                        addFromFavoritesList(context, clear)
+                    }.addOnFailureListener { e ->
+                        Log.e(TAG, "initFavoriteList: $e user: ${loginViewModel.user?.uid}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun addFromFavoritesList(context: Context, clear: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (clear) favoriteComicsList.clear()
+            Log.d(TAG, "addFromFavoritesList: ${favoriteList.toTypedArray()}")
+            for (i in favoriteList) {
+                addComicSync(
+                    i,
+                    context,
+                    Tab.FAVORITES
+                )
             }
         }
     }
 
     private suspend fun addToFavoriteList(id: Int) {
-        userDataStore.edit { mutablePreferences ->
-            val stringList = mutablePreferences[FAVORITE_LIST] ?: "[]"
-            val mutableList = generateListFromJSON(stringList)
-            mutableList.add(id)
-            mutablePreferences[FAVORITE_LIST] =
-                JSONArray(mutableList.toTypedArray()).toString()
+        favoriteList.add(id)
+        if (!loginViewModel.signedIn) {
+            userDataStore.edit { mutablePreferences ->
+                val stringList = mutablePreferences[favoriteListKey] ?: "[]"
+                val mutableList = generateListFromJSON(stringList)
+                mutableList.add(id)
+                mutablePreferences[favoriteListKey] =
+                    JSONArray(mutableList.toTypedArray()).toString()
+            }
+        } else {
+            db.collection("Users/${loginViewModel.user?.uid}/Favorites").document(id.toString())
+                .set(emptyMap<String, String>())
         }
     }
 
     private suspend fun removeFromFavoriteList(id: Int) {
-        userDataStore.edit { mutablePreferences ->
-            val stringList = mutablePreferences[FAVORITE_LIST] ?: "[]"
-            mutablePreferences[FAVORITE_LIST] =
-                JSONArray(generateListFromJSON(stringList) { value, _ -> value != id }.toTypedArray()).toString()
+        favoriteList.remove(id)
+        if (!loginViewModel.signedIn) {
+            userDataStore.edit { mutablePreferences ->
+                val stringList = mutablePreferences[favoriteListKey] ?: "[]"
+                mutablePreferences[favoriteListKey] =
+                    JSONArray(generateListFromJSON(stringList) { value, _ -> value != id }.toTypedArray()).toString()
+            }
+        } else {
+            db.collection("Users/${loginViewModel.user?.uid}/Favorites").document(id.toString())
+                .delete()
         }
     }
 
@@ -126,6 +185,7 @@ class MainViewModel(
 
 
     //<editor-fold desc="Functions to add and remove Comics to/from the lists">
+    var latestComicsInitialized = false
     var latestComicsList = mutableStateListOf<XKCDComic>()
     var latestImagesLoadedMap = mutableStateMapOf<Int, Boolean>()
 
@@ -186,6 +246,7 @@ class MainViewModel(
     //<editor-fold desc="Helper function to load all latest comics into the list">
     @ObsoleteCoroutinesApi
     fun addLatestComics(count: Int, context: Context) {
+        latestComicsInitialized = true
         getHttpJSON("https://xkcd.com/info.0.json", context, viewModelScope) {
             viewModelScope.launch(newSingleThreadContext("yes hello")) {
                 val number = it.getInt("num")
@@ -217,6 +278,7 @@ class MainViewModelFactory(
     private val dateFormat: DateFormat,
     private val startActivity: (Intent) -> Unit,
     private val navigateTo: (String) -> Unit,
+    private val loginViewModel: LoginViewModel,
     private val addToComicCache: (XKCDComic, Boolean) -> Unit,
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
 ) :
@@ -230,6 +292,7 @@ class MainViewModelFactory(
                 dateFormat,
                 startActivity,
                 navigateTo,
+                loginViewModel,
                 addToComicCache,
                 setComicCacheImageLoaded
             ) as T

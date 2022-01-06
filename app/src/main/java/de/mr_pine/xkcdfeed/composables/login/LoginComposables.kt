@@ -25,14 +25,21 @@ import de.mr_pine.xkcdfeed.LoadingState.Companion.LOADING
 import de.mr_pine.xkcdfeed.R
 
 @Composable
-fun Login(state: LoadingState, signWithCredential: (AuthCredential) -> Unit, context: Context) {
+fun Login(
+    state: LoadingState,
+    signInWithCredential: (AuthCredential, () -> Unit) -> Unit,
+    context: Context,
+    signedIn: Boolean,
+    signOut: (() -> Unit) -> Unit,
+    onFinished: () -> Unit
+) {
     val launcher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(it.data)
             try {
                 val account = task.getResult(ApiException::class.java)!!
                 val credential = GoogleAuthProvider.getCredential(account.idToken!!, null)
-                signWithCredential(credential)
+                signInWithCredential(credential, onFinished)
             } catch (e: ApiException) {
                 Log.e("TAG", "Google sign in failed", e)
             }
@@ -47,7 +54,8 @@ fun Login(state: LoadingState, signWithCredential: (AuthCredential) -> Unit, con
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OutlinedButton(border = ButtonDefaults.outlinedBorder.copy(width = 1.dp),
+        OutlinedButton(
+            border = ButtonDefaults.outlinedBorder.copy(width = 1.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
@@ -59,7 +67,9 @@ fun Login(state: LoadingState, signWithCredential: (AuthCredential) -> Unit, con
 
                 val googleSignInClient = GoogleSignIn.getClient(context, gso)
                 launcher.launch(googleSignInClient.signInIntent)
-            }) {
+            },
+            enabled = !signedIn
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = if (state == LOADING) Arrangement.Center else Arrangement.SpaceBetween,
@@ -69,10 +79,12 @@ fun Login(state: LoadingState, signWithCredential: (AuthCredential) -> Unit, con
                     CircularProgressIndicator()
                 } else {
                     Icon(
-                        painterResource(id = R.drawable.googleg_standard_color_18),
-                        null
+                        tint = if (!signedIn) Color.Unspecified else ButtonDefaults.buttonColors()
+                            .contentColor(enabled = false).value,
+                        painter = painterResource(id = R.drawable.googleg_standard_color_18),
+                        contentDescription = null
                     )
-                    Text(text = "Sign in with Google")
+                    Text(text = "Sign${if (signedIn) "ed" else ""} in with Google")
                     Icon(
                         tint = Color.Transparent,
                         imageVector = Icons.Default.MailOutline,
@@ -81,10 +93,14 @@ fun Login(state: LoadingState, signWithCredential: (AuthCredential) -> Unit, con
                 }
             }
         }
+        if (signedIn) {
+            Button(onClick = {signOut(onFinished)}) {
+                Text(text = "Sign out")
+            }
+        }
         when (state.status) {
-            LoadingState.Status.SUCCESS -> Text(text = "Success")
             LoadingState.Status.FAILED -> Text(text = state.msg ?: "Error")
-            LoadingState.Status.LOGGED_IN -> Text(text = "Success")
+            LoadingState.Status.LOGGED_IN -> Text(text = "Logged In")
             else -> {}
         }
     }

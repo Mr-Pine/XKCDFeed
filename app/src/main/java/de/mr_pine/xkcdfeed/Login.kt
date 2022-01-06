@@ -7,15 +7,16 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val TAG = "Login"
 
 data class LoadingState private constructor(val status: Status, val msg: String? = null) {
     companion object {
-        val LOADED = LoadingState(Status.SUCCESS)
         val IDLE = LoadingState(Status.IDLE)
         val LOADING = LoadingState(Status.RUNNING)
         val LOGGED_IN = LoadingState(Status.LOGGED_IN)
@@ -24,25 +25,46 @@ data class LoadingState private constructor(val status: Status, val msg: String?
 
     enum class Status {
         RUNNING,
-        SUCCESS,
         FAILED,
         IDLE,
         LOGGED_IN
     }
 }
 
-class LoginViewModel: ViewModel() {
-    var loadingState by mutableStateOf(LoadingState.IDLE)
+class LoginViewModel : ViewModel() {
     private val auth = Firebase.auth
 
-    fun signInWithCredential(credential: AuthCredential) = viewModelScope.launch {
+    var user: FirebaseUser? by mutableStateOf(auth.currentUser)
+
+    var loadingState by mutableStateOf(LoadingState.IDLE)
+
+    var signedIn by mutableStateOf(false)
+
+    init {
+        if (user != null) {
+            loadingState = LoadingState.LOGGED_IN
+            signedIn = true
+        }
+    }
+
+    fun signInWithCredential(credential: AuthCredential, onFinished: () -> Unit = {}) = viewModelScope.launch {
         try {
             loadingState = LoadingState.LOADING
             auth.signInWithCredential(credential)
-            loadingState = LoadingState.LOADED
+            delay(1000)
+            loadingState = LoadingState.LOGGED_IN
+            signedIn = true
             Log.d(TAG, "signInWithCredential: Finished!")
+            onFinished()
         } catch (e: Exception) {
             loadingState = LoadingState.error(e.localizedMessage)
         }
+    }
+
+    fun signOut(onFinished: () -> Unit) {
+        auth.signOut()
+        loadingState = LoadingState.IDLE
+        signedIn = false
+        onFinished()
     }
 }

@@ -32,7 +32,6 @@ import de.mr_pine.xkcdfeed.composables.main.MainContent
 import de.mr_pine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
 
 private const val TAG = "MainActivity"
 
@@ -50,9 +49,6 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
 
-    @ObsoleteCoroutinesApi
-    @ExperimentalFoundationApi
-    @ExperimentalComposeUiApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate: ${intent.data}")
@@ -77,6 +73,8 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             navController = rememberNavController()
 
+            val loginViewModel: LoginViewModel = viewModel()
+
             val singleComicViewModel: SingleComicViewModel = viewModel()
 
             val mainViewModel: MainViewModel = ViewModelProvider(
@@ -86,28 +84,18 @@ class MainActivity : ComponentActivity() {
                     DateFormat.getDateFormat(this),
                     this::startActivity,
                     navController::navigate,
+                    loginViewModel,
                     singleComicViewModel::addToComicCache,
                     singleComicViewModel::setComicCacheImageLoaded
                 )
             ).get(MainViewModel::class.java)
 
-            if (mainViewModel.latestComicsList.isEmpty()) {
+            if (!mainViewModel.latestComicsInitialized) {
                 mainViewModel.addLatestComics(4, this)
-
-                scope.launch(Dispatchers.IO) {
-                    val favList = mainViewModel.favoriteListFlow.first()
-                    for (i in favList) {
-                        mainViewModel.addComicSync(
-                            i,
-                            this@MainActivity,
-                            MainViewModel.Tab.FAVORITES
-                        )
-                    }
-                    Log.d(TAG, "onCreate: ${Thread.currentThread().name}")
-                }
             }
+            mainViewModel.initFavoriteList(this)
 
-            val loginViewModel: LoginViewModel = viewModel()
+            Log.d(TAG, "onCreate/AUTH: ${loginViewModel.loadingState}")
 
             var lastDestination by remember { mutableStateOf("null") }
 
@@ -167,7 +155,19 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(route = "login") {
-                        Login(state = loginViewModel.loadingState, signWithCredential = loginViewModel::signInWithCredential, context = this@MainActivity)
+                        Login(
+                            state = loginViewModel.loadingState, signInWithCredential = loginViewModel::signInWithCredential, context = this@MainActivity, signedIn = loginViewModel.signedIn, signOut = loginViewModel::signOut
+                        ) {
+                            scope.launch {
+                                delay(100)
+                                navController.popBackStack()
+                                mainViewModel.initFavoriteList(
+                                    this@MainActivity,
+                                    true,
+                                    if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
+                                )
+                            }
+                        }
                     }
                 }
             }
