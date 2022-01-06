@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed.composables.main
+package de.mr_pine.xkcdfeed.composables.main
 
 import android.content.Intent
 import android.util.Log
@@ -25,10 +25,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.pager.*
-import de.mrpine.xkcdfeed.MainViewModel
-import de.mrpine.xkcdfeed.XKCDComic
-import de.mrpine.xkcdfeed.ui.theme.Amber500
-import de.mrpine.xkcdfeed.ui.theme.Gray400
+import de.mr_pine.xkcdfeed.MainViewModel
+import de.mr_pine.xkcdfeed.XKCDComic
+import de.mr_pine.xkcdfeed.ui.theme.Amber500
+import de.mr_pine.xkcdfeed.ui.theme.Gray400
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.random.Random

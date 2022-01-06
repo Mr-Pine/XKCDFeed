@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed.composables.single
+package de.mr_pine.xkcdfeed.composables.single
 
 import android.content.Intent
 import android.content.res.Configuration
@@ -42,12 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
-import de.mrpine.xkcdfeed.MainViewModel
-import de.mrpine.xkcdfeed.SingleComicViewModel
-import de.mrpine.xkcdfeed.XKCDComic
-import de.mrpine.xkcdfeed.ui.theme.Amber500
-import de.mrpine.xkcdfeed.ui.theme.Gray400
-import de.mrpine.xkcdfeed.ui.theme.XKCDFeedTheme
+import de.mr_pine.xkcdfeed.MainViewModel
+import de.mr_pine.xkcdfeed.SingleComicViewModel
+import de.mr_pine.xkcdfeed.XKCDComic
+import de.mr_pine.xkcdfeed.ui.theme.Amber500
+import de.mr_pine.xkcdfeed.ui.theme.Gray400
+import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.DateFormat
@@ -86,6 +86,7 @@ fun SingleViewContent(
     })
 
     val currentNumber = getCurrentNumber()
+    var currentNumberString by remember(currentNumber) { mutableStateOf(currentNumber.toString()) }
 
     var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
     BottomSheetScaffold(
@@ -109,11 +110,24 @@ fun SingleViewContent(
                         Icon(Icons.Default.ArrowBack, "Previous Comic")
                     }
                     OutlinedTextField(
-                        value = currentNumber.toString(),
+                        value = currentNumberString,
                         modifier = Modifier
                             .width(100.dp),
-                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                        onValueChange = { setNumber(it.toInt()) },
+                        keyboardOptions = KeyboardOptions.Default.copy(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        onValueChange = {
+                            try {
+                                currentNumberString = it.filter {digit -> digit.isDigit() }.takeIf { newString -> newString.toInt() <= maxNumber } ?: currentNumberString
+                                if (currentNumberString != "") {
+                                    val newNumber = currentNumberString.toInt()
+                                    if (newNumber <= maxNumber) setNumber(newNumber)
+                                }
+                            } catch (err: Exception) {
+                                Log.e(TAG, "$it not parsable")
+                            }
+                        },
                         colors = TextFieldDefaults.outlinedTextFieldColors(
                             unfocusedBorderColor = Color.White,
                             focusedBorderColor = Color.White,
@@ -171,8 +185,8 @@ fun SingleViewContent(
                 if (bitmap != null) {
                     ZoomableImage(
                         bitmap = bitmap.asImageBitmap(),
-                        {current ->  if (current < maxNumber) setNumber(current + 1) },
-                        {current -> if (current > 0) setNumber(current - 1) },
+                        { current -> if (current < maxNumber) setNumber(current + 1) },
+                        { current -> if (current > 0) setNumber(current - 1) },
                         getCurrentNumber = getCurrentNumber
                     )
                 }
@@ -592,7 +606,7 @@ fun SinglePreview() {
             isFavorite = true,
             DateFormat.getDateInstance(),
             false,
-            {2524},
+            { 2524 },
             2526,
             {},
             {},

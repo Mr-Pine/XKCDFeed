@@ -1,4 +1,4 @@
-package de.mrpine.xkcdfeed.ui.theme
+package de.mr_pine.xkcdfeed.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.MaterialTheme
