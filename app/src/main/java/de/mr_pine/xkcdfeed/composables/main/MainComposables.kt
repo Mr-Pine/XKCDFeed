@@ -12,10 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,7 +33,10 @@ import kotlin.random.Random
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun MainContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) { //navRoute = mainView
+fun MainContent(
+    viewModel: MainViewModel,
+    showSingleComic: (XKCDComic) -> Unit
+) { //navRoute = mainView
     val favSheetState = viewModel.modalBottomSheetState
     val scope = rememberCoroutineScope()
 
@@ -48,7 +48,12 @@ fun MainContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) 
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun SheetLayout(state: ModalBottomSheetState, viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCDComic) -> Unit) {
+fun SheetLayout(
+    state: ModalBottomSheetState,
+    viewModel: MainViewModel,
+    scope: CoroutineScope,
+    showSingleComic: (XKCDComic) -> Unit
+) {
     val favoriteList = viewModel.favoriteListFlow.collectAsState(initial = listOf()).value
     val currentComic = viewModel.currentBottomSheetXKCDComic.value
     val isFav = if (currentComic != null) favoriteList.contains(currentComic.id) else false
@@ -163,19 +168,24 @@ fun sheetContent(
 @Composable
 fun MainScaffold(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
 
-    Scaffold(topBar = { TopAppBar() }) {
+    Scaffold(topBar = { TopAppBar { viewModel.navigateTo(it) } }) {
         TabbedContent(viewModel, showSingleComic)
     }
 }
 
 
 @Composable
-fun TopAppBar() {
+fun TopAppBar(navigate: (String) -> Unit) {
     return TopAppBar(
         title = { Text(text = "XKCDFeed") },
         contentColor = Color.White,
         elevation = 0.dp,
-        backgroundColor = MaterialTheme.colors.primary
+        backgroundColor = MaterialTheme.colors.primary,
+        actions = {
+            IconButton(onClick = { navigate("login") }) {
+                Icon(Icons.Default.MoreVert, "More vertical")
+            }
+        }
     )
 }
 //</editor-fold>

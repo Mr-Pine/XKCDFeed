@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
+import de.mr_pine.xkcdfeed.composables.login.Login
 import de.mr_pine.xkcdfeed.composables.main.MainContent
 import de.mr_pine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
@@ -106,6 +107,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            val loginViewModel: LoginViewModel = viewModel()
+
             var lastDestination by remember { mutableStateOf("null") }
 
             XKCDFeedTheme {
@@ -162,6 +165,9 @@ class MainActivity : ComponentActivity() {
                             setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
                             navigate = navController::navigate
                         )
+                    }
+                    composable(route = "login") {
+                        Login(state = loginViewModel.loadingState, signWithCredential = loginViewModel::signInWithCredential, context = this@MainActivity)
                     }
                 }
             }
