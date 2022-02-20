@@ -281,8 +281,7 @@ class MainViewModelFactory(
     private val loginViewModel: LoginViewModel,
     private val addToComicCache: (XKCDComic, Boolean) -> Unit,
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
-) :
-    ViewModelProvider.Factory {
+) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {

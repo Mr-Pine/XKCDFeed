@@ -10,20 +10,20 @@ import android.text.format.DateFormat
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.*
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
@@ -31,14 +31,13 @@ import de.mr_pine.xkcdfeed.composables.login.Login
 import de.mr_pine.xkcdfeed.composables.main.MainContent
 import de.mr_pine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val TAG = "MainActivity"
 
 val Context.userDataStore: DataStore<Preferences> by preferencesDataStore(name = "user-data")
 
-@ExperimentalFoundationApi @ObsoleteCoroutinesApi
-@ExperimentalComposeUiApi@ExperimentalPagerApi @ExperimentalMaterialApi
 class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent?) {
@@ -49,6 +48,10 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
 
+    @OptIn(ExperimentalPagerApi::class, androidx.compose.ui.ExperimentalComposeUiApi::class,
+        androidx.compose.foundation.ExperimentalFoundationApi::class,
+        androidx.compose.material.ExperimentalMaterialApi::class
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate: ${intent.data}")
