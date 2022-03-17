@@ -181,8 +181,8 @@ fun TopAppBar(navigate: (String) -> Unit) {
         elevation = 0.dp,
         backgroundColor = MaterialTheme.colors.primary,
         actions = {
-            IconButton(onClick = { navigate("login") }) {
-                Icon(Icons.Default.MoreVert, "More vertical")
+            IconButton(onClick = { navigate("settings") }) {
+                Icon(Icons.Default.Settings, "Settings")
             }
         }
     )

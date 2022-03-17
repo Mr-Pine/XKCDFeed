@@ -10,10 +10,12 @@ import android.text.format.DateFormat
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -29,9 +31,13 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
 import de.mr_pine.xkcdfeed.composables.login.Login
 import de.mr_pine.xkcdfeed.composables.main.MainContent
+import de.mr_pine.xkcdfeed.composables.settings.SettingsComposable
+import de.mr_pine.xkcdfeed.composables.settings.Theme
+import de.mr_pine.xkcdfeed.composables.settings.settingsDataStore
 import de.mr_pine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 private const val TAG = "MainActivity"
@@ -48,9 +54,12 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
 
-    @OptIn(ExperimentalPagerApi::class, androidx.compose.ui.ExperimentalComposeUiApi::class,
+    @OptIn(
+        ExperimentalPagerApi::class,
+        androidx.compose.ui.ExperimentalComposeUiApi::class,
         androidx.compose.foundation.ExperimentalFoundationApi::class,
-        androidx.compose.material.ExperimentalMaterialApi::class
+        androidx.compose.material.ExperimentalMaterialApi::class,
+        kotlinx.coroutines.ObsoleteCoroutinesApi::class
     )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +81,10 @@ class MainActivity : ComponentActivity() {
 
         Firebase.messaging.subscribeToTopic("newComic")
 
+        val themeSettingFlow = this.settingsDataStore.data.map {
+            if(it[intPreferencesKey("theme")] != null) enumValues<Theme>()[it[intPreferencesKey("theme")]!!] else Theme.SYSTEM
+        }
+
         setContent {
             val scope = rememberCoroutineScope()
             navController = rememberNavController()
@@ -91,7 +104,7 @@ class MainActivity : ComponentActivity() {
                     singleComicViewModel::addToComicCache,
                     singleComicViewModel::setComicCacheImageLoaded
                 )
-            ).get(MainViewModel::class.java)
+            )[MainViewModel::class.java]
 
             if (!mainViewModel.latestComicsInitialized) {
                 mainViewModel.addLatestComics(4, this)
@@ -102,7 +115,13 @@ class MainActivity : ComponentActivity() {
 
             var lastDestination by remember { mutableStateOf("null") }
 
-            XKCDFeedTheme {
+            val themeSetting by themeSettingFlow.collectAsState(initial = Theme.SYSTEM)
+
+            XKCDFeedTheme(darkTheme = when(themeSetting){
+                Theme.LIGHT -> false
+                Theme.DARK -> true
+                Theme.SYSTEM -> isSystemInDarkTheme()
+            }) {
                 val rootUri = "xkcd.com"
                 NavHost(navController = navController, startDestination = "mainView") {
                     composable(
@@ -171,6 +190,9 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
+                    }
+                    composable(route = "settings"){
+                        SettingsComposable(navigateBack = {navController.navigateUp()}, context = this@MainActivity.baseContext)
                     }
                 }
             }
