@@ -29,14 +29,12 @@ import androidx.navigation.navDeepLink
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
-import de.mr_pine.xkcdfeed.composables.login.Login
 import de.mr_pine.xkcdfeed.composables.main.MainContent
 import de.mr_pine.xkcdfeed.composables.settings.SettingsComposable
 import de.mr_pine.xkcdfeed.composables.settings.Theme
 import de.mr_pine.xkcdfeed.composables.settings.settingsDataStore
 import de.mr_pine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -176,23 +174,16 @@ class MainActivity : ComponentActivity() {
                             navigate = navController::navigate
                         )
                     }
-                    composable(route = "login") {
-                        Login(
-                            state = loginViewModel.loadingState, signInWithCredential = loginViewModel::signInWithCredential, context = this@MainActivity, signedIn = loginViewModel.signedIn, signOut = loginViewModel::signOut
-                        ) {
+                    composable(route = "settings"){
+                        SettingsComposable(navigateBack = {navController.navigateUp()}, loginViewModel = loginViewModel, mainViewModel = mainViewModel, context = this@MainActivity.baseContext, onLoginChanged = {
                             scope.launch {
-                                delay(100)
-                                navController.popBackStack()
                                 mainViewModel.initFavoriteList(
                                     this@MainActivity,
                                     true,
                                     if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
                                 )
                             }
-                        }
-                    }
-                    composable(route = "settings"){
-                        SettingsComposable(navigateBack = {navController.navigateUp()}, context = this@MainActivity.baseContext)
+                        })
                     }
                 }
             }

@@ -60,13 +60,13 @@ class MainViewModel(
 
 
     //<editor-fold desc="Favorite List">
-    private val favoriteListKey = stringPreferencesKey("favorite_list")
+    val favoriteListKey = stringPreferencesKey("favorite_list")
 
     var favoriteListInitialized = false
     var lastClearType = ClearType.UNDEFINED
     var favoriteList = mutableStateListOf<Int>()
 
-    enum class ClearType{
+    enum class ClearType {
         LOCAL, FIREBASE, UNDEFINED
     }
 
@@ -74,7 +74,7 @@ class MainViewModel(
         if (!favoriteListInitialized || (clear && lastClearType != clearType)) {
             favoriteListInitialized = true
             favoriteList.clear()
-            if(clearType != null) lastClearType = clearType
+            if (clearType != null) lastClearType = clearType
             viewModelScope.launch {
                 if (!loginViewModel.signedIn) {
                     userDataStore.data.first { preferences ->
@@ -149,7 +149,7 @@ class MainViewModel(
     }
 
     //Helper to parse string stored in DataStore
-    private fun generateListFromJSON(
+    fun generateListFromJSON(
         listString: String,
         condition: (Int, MutableList<Int>) -> Boolean = { value, list ->
             !list.contains(value)
@@ -200,7 +200,11 @@ class MainViewModel(
     private fun addToFavoriteComicList(item: XKCDComic, imageLoaded: Boolean? = null) {
         favoriteComicsList.add(item)
         if (imageLoaded != null) favoriteImagesLoadedMap[item.id] = imageLoaded
-        favoriteComicsList.sortByDescending { it.id }
+        try {
+            favoriteComicsList.sortByDescending { it.id }
+        } catch (e: Exception) {
+            Log.e(TAG, "addToFavoriteComicList: Error occurred: $e", )
+        }
     }
 
     private fun removeFromFavoriteComicList(item: XKCDComic) {
@@ -218,7 +222,7 @@ class MainViewModel(
         }
     }
 
-    suspend fun addComicSync(number: Int, context: Context, to: Tab) {
+    private suspend fun addComicSync(number: Int, context: Context, to: Tab) {
         withContext(Dispatchers.Main) {
             (if (to == Tab.LATEST) latestImagesLoadedMap else favoriteImagesLoadedMap)[number] =
                 false
