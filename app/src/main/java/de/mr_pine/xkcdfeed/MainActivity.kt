@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
         Firebase.messaging.subscribeToTopic("newComic")
 
         val themeSettingFlow = this.settingsDataStore.data.map {
-            if(it[intPreferencesKey("theme")] != null) enumValues<Theme>()[it[intPreferencesKey("theme")]!!] else Theme.SYSTEM
+            if (it[intPreferencesKey("theme")] != null) enumValues<Theme>()[it[intPreferencesKey("theme")]!!] else Theme.SYSTEM
         }
 
         setContent {
@@ -98,6 +98,7 @@ class MainActivity : ComponentActivity() {
                     DateFormat.getDateFormat(this),
                     this::startActivity,
                     navController::navigate,
+                    this.baseContext,
                     loginViewModel,
                     singleComicViewModel::addToComicCache,
                     singleComicViewModel::setComicCacheImageLoaded
@@ -115,11 +116,13 @@ class MainActivity : ComponentActivity() {
 
             val themeSetting by themeSettingFlow.collectAsState(initial = Theme.SYSTEM)
 
-            XKCDFeedTheme(darkTheme = when(themeSetting){
-                Theme.LIGHT -> false
-                Theme.DARK -> true
-                Theme.SYSTEM -> isSystemInDarkTheme()
-            }) {
+            XKCDFeedTheme(
+                darkTheme = when (themeSetting) {
+                    Theme.LIGHT -> false
+                    Theme.DARK -> true
+                    Theme.SYSTEM -> isSystemInDarkTheme()
+                }
+            ) {
                 val rootUri = "xkcd.com"
                 NavHost(navController = navController, startDestination = "mainView") {
                     composable(
@@ -161,11 +164,9 @@ class MainActivity : ComponentActivity() {
                     composable(
                         route = "singleView"
                     ) {
-                        if (singleComicViewModel.currentComic.value == null) {
-                            singleComicViewModel.setComic(
-                                mainViewModel.latestComicNumber,
-                                this@MainActivity
-                            )
+                        if (singleComicViewModel.currentComic == null) {
+                            singleComicViewModel.currentComic =
+                                mainViewModel.loadComic(mainViewModel.latestComicNumber)
                         }
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
@@ -174,16 +175,21 @@ class MainActivity : ComponentActivity() {
                             navigate = navController::navigate
                         )
                     }
-                    composable(route = "settings"){
-                        SettingsComposable(navigateBack = {navController.navigateUp()}, loginViewModel = loginViewModel, mainViewModel = mainViewModel, context = this@MainActivity.baseContext, onLoginChanged = {
-                            scope.launch {
-                                mainViewModel.initFavoriteList(
-                                    this@MainActivity,
-                                    true,
-                                    if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
-                                )
-                            }
-                        })
+                    composable(route = "settings") {
+                        SettingsComposable(
+                            navigateBack = { navController.navigateUp() },
+                            loginViewModel = loginViewModel,
+                            mainViewModel = mainViewModel,
+                            context = this@MainActivity.baseContext,
+                            onLoginChanged = {
+                                scope.launch {
+                                    mainViewModel.initFavoriteList(
+                                        this@MainActivity,
+                                        true,
+                                        if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
+                                    )
+                                }
+                            })
                     }
                 }
             }

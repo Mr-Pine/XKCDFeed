@@ -1,5 +1,6 @@
 package de.mr_pine.xkcdfeed.composables.main
 
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -7,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,16 +17,14 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.accompanist.placeholder.material.placeholder
 import de.mr_pine.xkcdfeed.XKCDComic
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
 import de.mr_pine.xkcdfeed.ui.theme.Gray400
-import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
 import kotlinx.coroutines.launch
 import java.text.DateFormat
-import java.util.*
 
 private const val TAG = "Card"
 
@@ -34,13 +34,18 @@ private const val TAG = "Card"
 fun ComicCard(
     xkcdComic: XKCDComic,
     dateFormat: DateFormat,
-    imageLoadedMap: MutableMap<Int, Boolean>,
     favoriteList: List<Int>,
     setFavorite: (XKCDComic) -> Unit,
     removeFavorite: (XKCDComic) -> Unit,
     onLongPress: suspend (XKCDComic) -> Unit,
     showSingle: (XKCDComic) -> Unit
 ) {
+    
+    LaunchedEffect(key1 = Unit) {
+        Log.d(TAG, "ComicCard: LaunchedEffect card number ${xkcdComic.id}")
+        xkcdComic.loadImage()
+    }
+    
     val scope = rememberCoroutineScope()
     Card(
         elevation = 5.dp,
@@ -48,16 +53,25 @@ fun ComicCard(
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onLongClick = { scope.launch { onLongPress(xkcdComic) } }) {showSingle(xkcdComic)}
+            .combinedClickable(
+                onLongClick = { scope.launch { onLongPress(xkcdComic) } },
+                onClick = { showSingle(xkcdComic) }
+            )
     ) {
         MaterialTheme.colors.primarySurface
         Column(modifier = Modifier.padding(top = 4.dp, start = 8.dp, end = 8.dp, bottom = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 3.dp)) {
-                    Text(text = xkcdComic.title, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = xkcdComic.title ?: "",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.placeholder(xkcdComic.title == null)
+                    )
                     Text(
                         text = "(${xkcdComic.id})",
-                        modifier = Modifier.padding(start = 4.dp, bottom = 1.5.dp),
+                        modifier = Modifier
+                            .padding(start = 4.dp, bottom = 1.5.dp)
+                            .placeholder(xkcdComic.title == null),
                         fontStyle = FontStyle.Italic,
                         style = MaterialTheme.typography.caption
                     )
@@ -86,14 +100,17 @@ fun ComicCard(
                 }
             }
             Text(
-                text = dateFormat.format(xkcdComic.pubDate.time),
+                text = xkcdComic.pubDate.let { if (it != null) dateFormat.format(it.time) else "" },
                 fontStyle = FontStyle.Italic,
                 fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .placeholder(xkcdComic.pubDate == null)
             )
-            if (imageLoadedMap[xkcdComic.id] == true) {
-                val bitmap =
-                    if (MaterialTheme.colors.isLight) xkcdComic.bitmapLight!! else xkcdComic.bitmapDark!!
+            val bitmap =
+                if (MaterialTheme.colors.isLight) xkcdComic.bitmapLight else xkcdComic.bitmapDark
+            if (bitmap != null) {
+
                 Image(
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = "Image of the comic",
@@ -113,34 +130,13 @@ fun ComicCard(
                 }
             }
             Text(
-                text = xkcdComic.description,
+                text = xkcdComic.description ?: "",
                 style = MaterialTheme.typography.caption,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .placeholder(xkcdComic.description == null)
             )
         }
-    }
-}
-
-@Preview("Preview Card")
-@Composable
-fun PreviewCard() {
-    val cal = Calendar.getInstance()
-    cal.set(2021, 9, 4)
-    XKCDFeedTheme(darkTheme = false) {
-        ComicCard(
-            xkcdComic = XKCDComic(
-                "Comet Visitor",
-                "https://imgs.xkcd.com/comics/comet_visitor.png",
-                2524,
-                cal,
-                "this is a description I am too lazy to copy",
-                rememberCoroutineScope(),
-                {}
-            ),
-            DateFormat.getDateInstance(),
-            mutableMapOf(), listOf(2523),
-            {}, {}, {}, {}
-        )
     }
 }
 

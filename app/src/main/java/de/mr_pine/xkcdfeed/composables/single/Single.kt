@@ -35,23 +35,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
+import com.google.accompanist.placeholder.material.placeholder
 import de.mr_pine.xkcdfeed.MainViewModel
 import de.mr_pine.xkcdfeed.SingleComicViewModel
 import de.mr_pine.xkcdfeed.XKCDComic
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
 import de.mr_pine.xkcdfeed.ui.theme.Gray400
-import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.DateFormat
-import java.util.*
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -457,9 +455,10 @@ fun bottomSheetContent(
                             verticalAlignment = Alignment.Bottom
                         ) {
                             Text(
-                                text = comic.title,
+                                text = comic.title ?: "",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 24.sp
+                                fontSize = 24.sp,
+                                modifier = Modifier.placeholder(comic.title == null)
                             )
                             Text(
                                 text = "(${comic.id})",
@@ -468,9 +467,10 @@ fun bottomSheetContent(
                             )
                         }
                         Text(
-                            text = dateFormat.format(comic.pubDate.time),
+                            text = comic.pubDate.let{ if(it != null) dateFormat.format(it.time) else "" },
                             fontStyle = FontStyle.Italic,
-                            fontSize = 16.sp
+                            fontSize = 16.sp,
+                            modifier = Modifier.placeholder(comic.pubDate == null)
                         )
                     }
                 }
@@ -497,7 +497,7 @@ fun bottomSheetContent(
                     )
                 }
             }
-            Text(text = comic.description)
+            Text(text = comic.description ?: "", modifier = Modifier.placeholder(comic.description == null))
             Spacer(modifier = Modifier.height(18.dp))
             Row(
                 horizontalArrangement = Arrangement.SpaceAround, modifier = Modifier
@@ -557,17 +557,14 @@ fun SingleViewContentStateful(
     setComic: (Int) -> Unit,
     navigate: (String) -> Unit
 ) {
-    Log.d(TAG, "SingleViewContentStateful: ${singleViewModel.imageLoaded.value}")
-    val currentComic = singleViewModel.currentComic.value
-    val currentNumber = singleViewModel.currentNumber
+    val currentComic = singleViewModel.currentComic
     val favoriteList = mainViewModel.favoriteList
     if (currentComic != null) {
-
         SingleViewContent(
             comic = currentComic,
             isFavorite = favoriteList.contains(currentComic.id),
             dateFormat = mainViewModel.dateFormat,
-            imageLoaded = singleViewModel.imageLoaded.value,
+            imageLoaded = singleViewModel.imageLoaded,
             setFavorite = mainViewModel::addFavorite,
             removeFavorite = mainViewModel::removeFavorite,
             getCurrentNumber = singleViewModel::getCurrentSingleNumber,
@@ -580,37 +577,5 @@ fun SingleViewContentStateful(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
-    }
-}
-
-@ExperimentalComposeUiApi
-@ExperimentalFoundationApi
-@ExperimentalMaterialApi
-@Preview
-@Composable
-fun SinglePreview() {
-    XKCDFeedTheme(darkTheme = false) {
-        val comic = XKCDComic(
-            "Comet Visitor",
-            "https://imgs.xkcd.com/comics/comet_visitor.png",
-            2524,
-            Calendar.getInstance(),
-            "this is a description I am too lazy to copy",
-            rememberCoroutineScope(),
-            {}
-        )
-        SingleViewContent(
-            comic = comic,
-            isFavorite = true,
-            DateFormat.getDateInstance(),
-            false,
-            { 2524 },
-            2526,
-            {},
-            {},
-            {},
-            {},
-            {})
-
     }
 }

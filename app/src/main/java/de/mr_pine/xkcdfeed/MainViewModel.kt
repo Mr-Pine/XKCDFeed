@@ -23,6 +23,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import java.text.DateFormat
+import java.util.concurrent.ConcurrentLinkedQueue
 
 
 class MainViewModel(
@@ -30,6 +31,7 @@ class MainViewModel(
     val dateFormat: DateFormat,
     val startActivity: (Intent) -> Unit,
     val navigateTo: (String) -> Unit,
+    private val context: Context,
     private val loginViewModel: LoginViewModel,
     private val addToComicCache: (XKCDComic, Boolean) -> Unit,
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
@@ -65,6 +67,19 @@ class MainViewModel(
     var favoriteListInitialized = false
     var lastClearType = ClearType.UNDEFINED
     var favoriteList = mutableStateListOf<Int>()
+
+    var cacheList = ConcurrentLinkedQueue<XKCDComic>()
+
+    fun loadComic(id: Int): XKCDComic {
+        val match = cacheList.indexOfFirst { it.id == id }
+        return if(match == -1) {
+            val newComic = XKCDComic(id, viewModelScope, context) {}
+            cacheList.add(newComic)
+            newComic
+        } else {
+            cacheList.elementAt(match)
+        }
+    }
 
     enum class ClearType {
         LOCAL, FIREBASE, UNDEFINED
@@ -203,7 +218,7 @@ class MainViewModel(
         try {
             favoriteComicsList.sortByDescending { it.id }
         } catch (e: Exception) {
-            Log.e(TAG, "addToFavoriteComicList: Error occurred: $e", )
+            Log.e(TAG, "addToFavoriteComicList: Error occurred: $e")
         }
     }
 
@@ -227,7 +242,13 @@ class MainViewModel(
             (if (to == Tab.LATEST) latestImagesLoadedMap else favoriteImagesLoadedMap)[number] =
                 false
         }
-        XKCDComic.getComic(
+        val comic = loadComic(number)
+        if (to == Tab.LATEST) {
+            addToLatestComicList(comic)
+        } else {
+            addToFavoriteComicList(comic)
+        }
+        /*XKCDComic.getComic(
             number = number,
             coroutineScope = viewModelScope,
             context = context,
@@ -242,7 +263,7 @@ class MainViewModel(
                 addToFavoriteComicList(it)
             }
             addToComicCache(it, false)
-        }
+        }*/
     }
     //</editor-fold>
 
@@ -282,6 +303,7 @@ class MainViewModelFactory(
     private val dateFormat: DateFormat,
     private val startActivity: (Intent) -> Unit,
     private val navigateTo: (String) -> Unit,
+    private val context: Context,
     private val loginViewModel: LoginViewModel,
     private val addToComicCache: (XKCDComic, Boolean) -> Unit,
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
@@ -295,6 +317,7 @@ class MainViewModelFactory(
                 dateFormat,
                 startActivity,
                 navigateTo,
+                context,
                 loginViewModel,
                 addToComicCache,
                 setComicCacheImageLoaded
