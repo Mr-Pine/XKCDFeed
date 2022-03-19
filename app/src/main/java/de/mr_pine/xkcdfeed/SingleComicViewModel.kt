@@ -14,10 +14,6 @@ class SingleComicViewModel: ViewModel() {
     var currentNumber by mutableStateOf(-1)
     var imageLoaded by mutableStateOf(true)
 
-    fun getCurrentSingleNumber(): Int {
-        return currentNumber
-    }
-
     fun setComic(number: Int, context: Context){
         currentNumber = number
 

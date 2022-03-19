@@ -63,7 +63,7 @@ fun ComicCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 3.dp)) {
                     Text(
-                        text = xkcdComic.title ?: "",
+                        text = xkcdComic.title ?: "I am a title :)",
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.placeholder(xkcdComic.title == null)
                     )
@@ -100,7 +100,7 @@ fun ComicCard(
                 }
             }
             Text(
-                text = xkcdComic.pubDate.let { if (it != null) dateFormat.format(it.time) else "" },
+                text = xkcdComic.pubDate.let { if (it != null) dateFormat.format(it.time) else "00/00/0000" },
                 fontStyle = FontStyle.Italic,
                 fontSize = 12.sp,
                 modifier = Modifier
@@ -130,7 +130,7 @@ fun ComicCard(
                 }
             }
             Text(
-                text = xkcdComic.description ?: "",
+                text = xkcdComic.description ?: "I am a description text. If you see me, something isn't working as intended. Written at 2:36 a.m.",
                 style = MaterialTheme.typography.caption,
                 modifier = Modifier
                     .padding(top = 8.dp)

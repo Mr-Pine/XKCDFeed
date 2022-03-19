@@ -63,8 +63,6 @@ fun SingleViewContent(
     comic: XKCDComic,
     isFavorite: Boolean,
     dateFormat: DateFormat,
-    imageLoaded: Boolean,
-    getCurrentNumber: () -> Int,
     maxNumber: Int,
     setNumber: (Int) -> Unit,
     setFavorite: (XKCDComic) -> Unit,
@@ -72,6 +70,10 @@ fun SingleViewContent(
     navigateHome: () -> Unit,
     startActivity: (Intent) -> Unit
 ) {
+    LaunchedEffect(key1 = comic.id) {
+        comic.loadImage()
+    }
+
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
 
@@ -83,7 +85,7 @@ fun SingleViewContent(
             scaffoldState.bottomSheetState.expand()
     })
 
-    val currentNumber = getCurrentNumber()
+    val currentNumber = comic.id
     var currentNumberString by remember(currentNumber) { mutableStateOf(currentNumber.toString()) }
 
     var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
@@ -117,7 +119,9 @@ fun SingleViewContent(
                         ),
                         onValueChange = {
                             try {
-                                currentNumberString = it.filter {digit -> digit.isDigit() }.takeIf { newString -> newString.toInt() <= maxNumber } ?: currentNumberString
+                                currentNumberString = it.filter { digit -> digit.isDigit() }
+                                    .takeIf { newString -> newString.toInt() <= maxNumber }
+                                    ?: currentNumberString
                                 if (currentNumberString != "") {
                                     val newNumber = currentNumberString.toInt()
                                     if (newNumber <= maxNumber) setNumber(newNumber)
@@ -177,19 +181,18 @@ fun SingleViewContent(
                 .padding(bottom = with(LocalDensity.current) { (parentSize.height - scaffoldState.bottomSheetState.offset.value).toDp() }),
             contentAlignment = Alignment.Center
         ) {
-            if (imageLoaded) {
-                val bitmap =
-                    if (MaterialTheme.colors.isLight) comic.bitmapLight else comic.bitmapDark
-                if (bitmap != null) {
-                    ZoomableImage(
-                        bitmap = bitmap.asImageBitmap(),
-                        { current -> if (current < maxNumber) setNumber(current + 1) },
-                        { current -> if (current > 0) setNumber(current - 1) },
-                        getCurrentNumber = getCurrentNumber
-                    )
-                }
+            val bitmap =
+                if (MaterialTheme.colors.isLight) comic.bitmapLight else comic.bitmapDark
+            Log.d(TAG, "SingleViewContent: $bitmap")
+            if (bitmap != null) {
+                ZoomableImage(
+                    bitmap = bitmap.asImageBitmap(),
+                    { current -> if (current < maxNumber) setNumber(current + 1) },
+                    { current -> if (current > 0) setNumber(current - 1) },
+                    getCurrentNumber = { currentNumber }
+                )
             } else {
-                CircularProgressIndicator()
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
     }
@@ -455,7 +458,7 @@ fun bottomSheetContent(
                             verticalAlignment = Alignment.Bottom
                         ) {
                             Text(
-                                text = comic.title ?: "",
+                                text = comic.title ?: "I am a title :)",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp,
                                 modifier = Modifier.placeholder(comic.title == null)
@@ -467,7 +470,7 @@ fun bottomSheetContent(
                             )
                         }
                         Text(
-                            text = comic.pubDate.let{ if(it != null) dateFormat.format(it.time) else "" },
+                            text = comic.pubDate.let { if (it != null) dateFormat.format(it.time) else "00/00/0000" },
                             fontStyle = FontStyle.Italic,
                             fontSize = 16.sp,
                             modifier = Modifier.placeholder(comic.pubDate == null)
@@ -497,7 +500,10 @@ fun bottomSheetContent(
                     )
                 }
             }
-            Text(text = comic.description ?: "", modifier = Modifier.placeholder(comic.description == null))
+            Text(
+                text = comic.description ?: "I am a description text. If you see me, something isn't working as intended. Written at 2:36 a.m.",
+                modifier = Modifier.placeholder(comic.description == null)
+            )
             Spacer(modifier = Modifier.height(18.dp))
             Row(
                 horizontalArrangement = Arrangement.SpaceAround, modifier = Modifier
@@ -564,11 +570,9 @@ fun SingleViewContentStateful(
             comic = currentComic,
             isFavorite = favoriteList.contains(currentComic.id),
             dateFormat = mainViewModel.dateFormat,
-            imageLoaded = singleViewModel.imageLoaded,
             setFavorite = mainViewModel::addFavorite,
             removeFavorite = mainViewModel::removeFavorite,
-            getCurrentNumber = singleViewModel::getCurrentSingleNumber,
-            setNumber = setComic,
+            setNumber = {singleViewModel.currentComic = mainViewModel.loadComic(it)},
             maxNumber = mainViewModel.latestComicNumber,
             startActivity = { mainViewModel.startActivity(it) },
             navigateHome = { navigate("mainView") }

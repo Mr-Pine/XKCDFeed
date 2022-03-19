@@ -150,9 +150,10 @@ class MainActivity : ComponentActivity() {
                         )
                     ) { backStackEntry ->
                         val comicNumber = backStackEntry.arguments?.getInt("number")
-                        if (lastDestination != "singleView") singleComicViewModel.setComic(
-                            comicNumber ?: mainViewModel.latestComicNumber, this@MainActivity
-                        )
+
+                        if (lastDestination != "singleView") singleComicViewModel.currentComic =
+                            comicNumber?.let { mainViewModel.loadComic(it) }
+
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
@@ -174,6 +175,8 @@ class MainActivity : ComponentActivity() {
                             setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
                             navigate = navController::navigate
                         )
+
+                        lastDestination = "singleView"
                     }
                     composable(route = "settings") {
                         SettingsComposable(
@@ -189,7 +192,10 @@ class MainActivity : ComponentActivity() {
                                         if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
                                     )
                                 }
-                            })
+                            }
+                        )
+
+                        lastDestination = "settings"
                     }
                 }
             }

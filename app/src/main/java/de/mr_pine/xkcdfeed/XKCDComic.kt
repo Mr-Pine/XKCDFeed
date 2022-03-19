@@ -61,6 +61,7 @@ class XKCDComic(
     }
 
     fun loadImage() {
+        if(bitmapDark == null || bitmapLight == null)
         coroutineScope.launch(Dispatchers.IO) {
             val url = imageURL.first { it != null }!!
             Log.d(TAG, "loadImage: $url")
