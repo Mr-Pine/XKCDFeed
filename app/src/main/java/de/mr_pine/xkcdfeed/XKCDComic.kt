@@ -37,6 +37,7 @@ class XKCDComic(
     var title: String? by mutableStateOf(null)
     var pubDate: Calendar? by mutableStateOf(null)
     private var imageURL = MutableStateFlow<String?>(null)
+    var imageUrl by mutableStateOf("https://imgs.xkcd.com/comics/advanced_techniques.png")
     var description: String? by mutableStateOf(null)
     var bitmapLight: Bitmap? by mutableStateOf(null)
     var bitmapDark: Bitmap? by mutableStateOf(null)
@@ -47,6 +48,7 @@ class XKCDComic(
         getHttpJSON("https://xkcd.com/$id/info.0.json", context, coroutineScope) { json ->
             title = json.getString("title")
             imageURL.value = json.getString("img")
+            imageUrl = json.getString("img")
             pubDate = Calendar.getInstance()
             pubDate!!.clear()
             pubDate!!.set(
@@ -61,13 +63,13 @@ class XKCDComic(
     }
 
     fun loadImage() {
-        if(bitmapDark == null || bitmapLight == null)
-        coroutineScope.launch(Dispatchers.IO) {
-            val url = imageURL.first { it != null }!!
-            Log.d(TAG, "loadImage: $url")
-            bitmapLight = getBitmapFromURL(url)
-            bitmapDark = convertToDarkImage(bitmapLight) {}
-        }
+        if (bitmapDark == null || bitmapLight == null)
+            coroutineScope.launch(Dispatchers.IO) {
+                val url = imageURL.first { it != null }!!
+                Log.d(TAG, "loadImage: $url")
+                bitmapLight = getBitmapFromURL(url)
+                bitmapDark = convertToDarkImage(bitmapLight) {}
+            }
     }
 
     private fun convertToDarkImage(lightBitmap: Bitmap?, onFinish: () -> Unit): Bitmap? {
@@ -185,3 +187,4 @@ fun getBitmapFromURL(src: String): Bitmap? {
         null
     }
 }
+

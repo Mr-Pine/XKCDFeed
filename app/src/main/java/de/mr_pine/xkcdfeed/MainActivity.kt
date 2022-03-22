@@ -123,6 +123,7 @@ class MainActivity : ComponentActivity() {
                     Theme.SYSTEM -> isSystemInDarkTheme()
                 }
             ) {
+
                 val rootUri = "xkcd.com"
                 NavHost(navController = navController, startDestination = "mainView") {
                     composable(

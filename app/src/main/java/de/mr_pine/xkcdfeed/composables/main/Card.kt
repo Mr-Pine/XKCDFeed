@@ -12,22 +12,60 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import coil.size.Size
 import com.google.accompanist.placeholder.material.placeholder
 import de.mr_pine.xkcdfeed.XKCDComic
+import de.mr_pine.xkcdfeed.composables.toColorMatrix
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
 import de.mr_pine.xkcdfeed.ui.theme.Gray400
 import kotlinx.coroutines.launch
 import java.text.DateFormat
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 private const val TAG = "Card"
 
+val angle = 180 * PI.toFloat() / 180
+val sin = sin(angle)
+val cos = cos(angle)
+val sqrt2 = sqrt(2f)
+val sqrt2I = 1 / sqrt2
+val sqrt3 = sqrt(3f)
+val sqrt3I = 1 / sqrt3
+val sqrt6 = sqrt(6f)
+val sqrt6I = 1 / sqrt6
+
+/*val e = (sqrt3I * sqrt2 * (sqrt2 * wR - (wB + wG) * sqrt2I) / bgr + sqrt3I) * sqrt3I
+val f = (sqrt2 * wR - (wB + wG) * sqrt2I) / bgr * sqrt3I
+val h = sqrt2 * (wG - wB) / (3 * bgr)
+val i =
+    ((wG - wB) / bgr * sqrt3I + sqrt3I - (sqrt2 * wR - (wB + wG) * sqrt2I) / bgr * sqrt6I) * sqrt3I
+val j = (sqrt2 * wR - (wB + wG) * sqrt2I)/ bgr * sqrt3I
+val k = -cos * sqrt6I - sin * sqrt2I
+val l = cos * sqrt2I - sin * sqrt6I
+val m = 2/3 * sqrt3I * sin * (wG-wB) / bgr
+
+val matrix = ColorMatrix(floatArrayOf(
+    e + sqrt2 * sqrt3I * (sqrt2 * sqrt3I - f) * cos - m, e + sqrt2 * sqrt3I * (-sqrt6I - f) * cos - sqrt2 * sqrt3I * (sqrt2I - h) * sin, e + sqrt2 * sqrt3I * (-sqrt6I - f) * cos - sqrt2 * sqrt3I * (-sqrt2I - h) * sin, 0f, 0f,
+    i + (sqrt2 * sqrt3I - j) * k - h*l, i + (-sqrt6I - j) * k -(sqrt2I - h)*l, i + (-sqrt6I - j) * k -(-sqrt2I - h)*l, 0f, 0f,
+    i + (sqrt2 * sqrt3I - j) * k - h*l, i + (-sqrt6I - j) * k -(sqrt2I - h)*l, i + (-sqrt6I - j) * k -(-sqrt2I - h)*l, 0f, 0f,
+    0f, 0f, 0f, 1f, 0f
+))*/
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -37,15 +75,62 @@ fun ComicCard(
     favoriteList: List<Int>,
     setFavorite: (XKCDComic) -> Unit,
     removeFavorite: (XKCDComic) -> Unit,
+    invertMatrix: Array<FloatArray>,
     onLongPress: suspend (XKCDComic) -> Unit,
     showSingle: (XKCDComic) -> Unit
 ) {
-    
+    val painter = rememberAsyncImagePainter(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(xkcdComic.imageUrl)
+            .size(Size.ORIGINAL) // Set the target size to load the image at.
+            .build()
+    )
+
     LaunchedEffect(key1 = Unit) {
         Log.d(TAG, "ComicCard: LaunchedEffect card number ${xkcdComic.id}")
         xkcdComic.loadImage()
     }
-    
+
+    /*val angle = 180f
+    val sin = sin(angle * (2* PI.toFloat()) / 360)
+    val cos = cos(angle * (2* PI.toFloat()) / 360)
+    val n3Cos = (1 - cos) / 3f
+    val sinSqrt13 = sqrt(1/3f) * sin
+    val fac = 1f
+    val add = (fac - 1) * 255/2
+    val matrix = ColorMatrix(floatArrayOf(
+        fac*(cos + n3Cos)         , fac*(n3Cos + sinSqrt13) , fac*(n3Cos - sinSqrt13) , 0f, add,
+        fac*(n3Cos - sinSqrt13)   , fac*(cos + n3Cos)       , fac*(n3Cos + sinSqrt13) , 0f, add,
+        fac*(n3Cos + sinSqrt13)   , fac*(n3Cos - sinSqrt13) , fac*(cos + n3Cos)       , 0f, add,
+        0f                  , 0f                , 0f                , 1f, 0f,
+    ))*/
+    /*Log.d(TAG, "ComicCard: ${
+        arrayOf(
+            floatArrayOf(1f, 0f, 0f, 1f),
+            floatArrayOf(0f, 1f, 2f, 0f),
+            floatArrayOf(0f, 3f, 1f, 0f),
+            floatArrayOf(4f, 0f, 0f, 1f)
+        ).matrixMultiply(
+            arrayOf(
+                floatArrayOf(5f, 0f, 0f, 1f),
+                floatArrayOf(0f, 0f, 1f, 0f),
+                floatArrayOf(0f, 1f, 0f, 0f),
+                floatArrayOf(1f, 0f, 0f, 5f)
+            ) 
+        ).joinToString { it.joinToString(", ") + "\n" }
+    }")*/
+
+    /*val matrix = ColorMatrix(floatArrayOf(
+        -1f, 0f, 0f, 0f, 255f,
+        0f, -1f, 0f, 0f, 255f,
+        0f, 0f, -1f, 0f, 255f,
+        0f, 0f, 0f, 1f, 0f
+    ))*/
+
+
+
+    val colorFilter = ColorFilter.colorMatrix(ColorMatrix(invertMatrix.toColorMatrix()))
+
     val scope = rememberCoroutineScope()
     Card(
         elevation = 5.dp,
@@ -53,6 +138,7 @@ fun ComicCard(
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
             .combinedClickable(
                 onLongClick = { scope.launch { onLongPress(xkcdComic) } },
                 onClick = { showSingle(xkcdComic) }
@@ -110,14 +196,22 @@ fun ComicCard(
             val bitmap =
                 if (MaterialTheme.colors.isLight) xkcdComic.bitmapLight else xkcdComic.bitmapDark
             if (bitmap != null) {
-
                 Image(
+                    //painter = painter,
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = "Image of the comic",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .fillMaxWidth()
-
+                        .fillMaxWidth(),
+                )
+                Image(
+                    painter = painter,
+                    //bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "Image of the comic",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    colorFilter = colorFilter
                 )
             } else {
                 Box(
@@ -130,7 +224,8 @@ fun ComicCard(
                 }
             }
             Text(
-                text = xkcdComic.description ?: "I am a description text. If you see me, something isn't working as intended. Written at 2:36 a.m.",
+                text = xkcdComic.description
+                    ?: "I am a description text. If you see me, something isn't working as intended. Written at 2:36 a.m.",
                 style = MaterialTheme.typography.caption,
                 modifier = Modifier
                     .padding(top = 8.dp)

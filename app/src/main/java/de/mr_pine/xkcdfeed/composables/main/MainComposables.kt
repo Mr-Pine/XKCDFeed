@@ -2,6 +2,7 @@ package de.mr_pine.xkcdfeed.composables.main
 
 import android.content.Intent
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,19 +15,26 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.StarOutline
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.set
 import com.google.accompanist.pager.*
 import de.mr_pine.xkcdfeed.MainViewModel
+import de.mr_pine.xkcdfeed.R
 import de.mr_pine.xkcdfeed.XKCDComic
+import de.mr_pine.xkcdfeed.composables.*
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
 import de.mr_pine.xkcdfeed.ui.theme.Gray400
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 @ExperimentalPagerApi
@@ -319,13 +327,110 @@ fun ComicList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         state = state ?: rememberLazyListState()
     ) {
-        items(list.sortedBy { -it.id }) { item ->
+        item {
+
+            val lightBitmap =
+                ImageBitmap.imageResource(id = R.drawable.jji_colorchart).asAndroidBitmap()
+
+            var darkBitmap by remember {
+                mutableStateOf(lightBitmap.copy(lightBitmap.config, true))
+            }
+
+            var wR by remember { mutableStateOf(50f/*0.6612f*//*3.311f*/) }
+            var wG by remember { mutableStateOf(10f/*0.4018f*//*0.733f*/) }
+            var wB by remember { mutableStateOf(1f/*0.8680f*//*4.554f*/) }
+
+            val matrix by remember(wR, wG, wB){
+                var matrix = identityMatrix(4,4)
+                matrix = matrix.matrixMultiply(arrayOf(
+                    floatArrayOf(-1f, 0f, 0f, 0f),
+                    floatArrayOf(0f, -1f, 0f, 0f),
+                    floatArrayOf(0f, 0f, -1f, 0f),
+                    floatArrayOf(0f, 0f, 0f, -1f),
+                ))
+                matrix = matrix.matrixAdd(arrayOf(
+                    floatArrayOf(0f, 0f, 0f, 0f),
+                    floatArrayOf(0f, 0f, 0f, 0f),
+                    floatArrayOf(0f, 0f, 0f, 0f),
+                    floatArrayOf(255f, 255f, 255f, 0f),
+                ))
+
+                //HSV 180 rotation
+                matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = 1/ sqrt(2f)))
+                Log.d(TAG, "\n${matrix.matrixToString()}")
+                matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = -sqrt(1/3f)))
+                val transformedWeights = arrayOf(floatArrayOf(wR, wG, wB)).matrixMultiply(matrix.cutTo(3,3)).matrixMultiply(matrix.cutTo(3,3))
+                val shearX = (transformedWeights[0][0]/transformedWeights[0][2])
+                val shearY = (transformedWeights[0][1]/transformedWeights[0][2])
+                matrix = matrix.matrixMultiply(shearZ(shearX, shearY))
+                matrix = matrix.matrixMultiply(zRotation(PI.toFloat()))
+                matrix = matrix.matrixMultiply(shearZ(-shearX, -shearY))
+                matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = sqrt(1/3f)))
+                matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = -1/ sqrt(2f)))
+
+                return@remember mutableStateOf(ColorMatrix(matrix.toColorMatrix()))
+            }
+
+            LaunchedEffect(key1 = Unit) {
+                val dark = darkBitmap
+                for (y in 0 until dark.height) {
+                    for (x in 0 until dark.width) {
+                        val pixelColor = dark.getPixel(x, y)
+                        val invertedPixelColor = android.graphics.Color.rgb(
+                            255 - android.graphics.Color.red(pixelColor),
+                            255 - android.graphics.Color.green(pixelColor),
+                            255 - android.graphics.Color.blue(pixelColor)
+                        )
+                        val hsv = FloatArray(3)
+                        android.graphics.Color.colorToHSV(invertedPixelColor, hsv)
+                        dark[x, y] =
+                            android.graphics.Color.HSVToColor(
+                                floatArrayOf(
+                                    (hsv[0] + 180) % 360,
+                                    hsv[1],
+                                    hsv[2]
+                                )
+                            )
+                    }
+                }
+                darkBitmap = dark
+            }
+
+            Image(
+                bitmap = darkBitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Crop
+            )
+            Slider(value = wR, onValueChange = {wR = it}, valueRange = -3f .. 10f)
+            Slider(value = wG, onValueChange = {wG = it}, valueRange = -3f .. 10f)
+            Slider(value = wB, onValueChange = {wB = it}, valueRange = -3f .. 10f)
+            Text(text = "hi $wR, $wG, $wB")
+            Image(
+                painter = painterResource(id = R.drawable.jji_colorchart),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Crop,
+                colorFilter = ColorFilter.colorMatrix(
+                    matrix
+                )
+            )
+        }
+
+        items(list.let {
+            try {
+                it.sortedBy { item -> -item.id }
+            } catch (e: Exception) {
+                it
+            }
+        }) { item ->
             ComicCard(
                 item,
                 viewModel.dateFormat,
                 viewModel.favoriteList,
                 viewModel::addFavorite,
                 viewModel::removeFavorite,
+                viewModel.matrix,
                 viewModel::showBottomSheet,
                 showSingleComic
             )

@@ -7,9 +7,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.ModalBottomSheetValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -19,11 +17,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import de.mr_pine.xkcdfeed.composables.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import java.text.DateFormat
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.math.PI
+import kotlin.math.sqrt
 
 
 class MainViewModel(
@@ -37,6 +38,47 @@ class MainViewModel(
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
 ) : ViewModel() {
     private val TAG = "MainViewModel"
+
+    var matrix by mutableStateOf(identityMatrix(4, 4))
+
+
+    private val wR = -0.6612f/*0.701f*//*0.6214f*//*1.0f*///0.2f//0.2f//0.2126f//0.299f//0.3086f
+    private val wG = -0.4018f/*0.413f*//*0.3906f*//*0.4f*///0.8f//0.8f//7152f//587f//0.6094f
+    private val wB = -0.8680f/*0.818f*//*0.9180f*//*0.9f*///0.06f//0.06f//0.0722f//0.114f//0.0820f
+    
+    //TODO: Werte nicht perfekt. Slider zum gute Werte finden einbauen
+
+    init { //implementation of http://www.graficaobscura.com/matrix/index.html
+        //RGB invert
+        matrix = matrix.matrixMultiply(arrayOf(
+            floatArrayOf(-1f, 0f, 0f, 0f),
+            floatArrayOf(0f, -1f, 0f, 0f),
+            floatArrayOf(0f, 0f, -1f, 0f),
+            floatArrayOf(0f, 0f, 0f, -1f),
+        ))
+        matrix = matrix.matrixAdd(arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f),
+            floatArrayOf(0f, 0f, 0f, 0f),
+            floatArrayOf(0f, 0f, 0f, 0f),
+            floatArrayOf(255f, 255f, 255f, 0f),
+        ))
+
+        //HSV 180 rotation
+        matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = 1/ sqrt(2f)))
+        Log.d(TAG, "\n${matrix.matrixToString()}")
+        matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = -sqrt(1/3f)))
+        val transformedWeights = arrayOf(floatArrayOf(wR, wG, wB)).matrixMultiply(matrix.cutTo(3,3))
+        val shearX = (transformedWeights[0][0]/transformedWeights[0][2])
+        val shearY = (transformedWeights[0][1]/transformedWeights[0][2])
+        matrix = matrix.matrixMultiply(shearZ(shearX, shearY))
+        matrix = matrix.matrixMultiply(zRotation(PI.toFloat()))
+        matrix = matrix.matrixMultiply(shearZ(-shearX, -shearY))
+        matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = sqrt(1/3f)))
+        matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = -1/ sqrt(2f)))
+
+
+    }
+
 
     private val db = Firebase.firestore
 
@@ -72,7 +114,7 @@ class MainViewModel(
 
     fun loadComic(id: Int): XKCDComic {
         val match = cacheList.indexOfFirst { it.id == id }
-        return if(match == -1) {
+        return if (match == -1) {
             val newComic = XKCDComic(id, viewModelScope, context) {}
             cacheList.add(newComic)
             newComic
