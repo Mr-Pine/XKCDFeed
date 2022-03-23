@@ -12,13 +12,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,7 +32,10 @@ import kotlin.random.Random
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun MainContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) { //navRoute = mainView
+fun MainContent(
+    viewModel: MainViewModel,
+    showSingleComic: (XKCDComic) -> Unit
+) { //navRoute = mainView
     val favSheetState = viewModel.modalBottomSheetState
     val scope = rememberCoroutineScope()
 
@@ -48,8 +47,13 @@ fun MainContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) 
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
-fun SheetLayout(state: ModalBottomSheetState, viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCDComic) -> Unit) {
-    val favoriteList = viewModel.favoriteListFlow.collectAsState(initial = listOf()).value
+fun SheetLayout(
+    state: ModalBottomSheetState,
+    viewModel: MainViewModel,
+    scope: CoroutineScope,
+    showSingleComic: (XKCDComic) -> Unit
+) {
+    val favoriteList = viewModel.favoriteList
     val currentComic = viewModel.currentBottomSheetXKCDComic.value
     val isFav = if (currentComic != null) favoriteList.contains(currentComic.id) else false
     ModalBottomSheetLayout(
@@ -163,19 +167,24 @@ fun sheetContent(
 @Composable
 fun MainScaffold(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
 
-    Scaffold(topBar = { TopAppBar() }) {
+    Scaffold(topBar = { TopAppBar { viewModel.navigateTo(it) } }) {
         TabbedContent(viewModel, showSingleComic)
     }
 }
 
 
 @Composable
-fun TopAppBar() {
+fun TopAppBar(navigate: (String) -> Unit) {
     return TopAppBar(
         title = { Text(text = "XKCDFeed") },
         contentColor = Color.White,
         elevation = 0.dp,
-        backgroundColor = MaterialTheme.colors.primary
+        backgroundColor = MaterialTheme.colors.primary,
+        actions = {
+            IconButton(onClick = { navigate("settings") }) {
+                Icon(Icons.Default.Settings, "Settings")
+            }
+        }
     )
 }
 //</editor-fold>
@@ -265,7 +274,6 @@ fun Tab1(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
     }) {
         ComicList(
             list = viewModel.latestComicsList,
-            imagesLoadedMap = viewModel.latestImagesLoadedMap,
             viewModel = viewModel,
             showSingleComic = showSingleComic
         )
@@ -283,12 +291,11 @@ fun Tab2(viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCD
                 viewModel.scrollToFavItem(randomIndex)
             }
         }) {
-            Icon(Icons.Default.Shuffle, "Star")
+            Icon(Icons.Default.Shuffle, "Shuffle")
         }
     }) {
         ComicList(
             list = viewModel.favoriteComicsList,
-            imagesLoadedMap = viewModel.favoriteImagesLoadedMap,
             viewModel = viewModel,
             showSingleComic = showSingleComic,
             state = viewModel.favListState
@@ -300,7 +307,6 @@ fun Tab2(viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCD
 @Composable
 fun ComicList(
     list: List<XKCDComic>,
-    imagesLoadedMap: MutableMap<Int, Boolean>,
     viewModel: MainViewModel,
     showSingleComic: (XKCDComic) -> Unit,
     state: LazyListState? = null
@@ -313,14 +319,20 @@ fun ComicList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         state = state ?: rememberLazyListState()
     ) {
-        items(list) { item ->
+        items(list.let {
+            try {
+                it.sortedBy { item -> -item.id }
+            } catch (e: Exception) {
+                it
+            }
+        }) { item ->
             ComicCard(
                 item,
                 viewModel.dateFormat,
-                imagesLoadedMap,
-                viewModel.favoriteListFlow.collectAsState(initial = mutableListOf()).value,
+                viewModel.favoriteList,
                 viewModel::addFavorite,
                 viewModel::removeFavorite,
+                viewModel.matrix,
                 viewModel::showBottomSheet,
                 showSingleComic
             )

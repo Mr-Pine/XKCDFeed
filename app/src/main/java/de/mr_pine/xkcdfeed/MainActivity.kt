@@ -10,35 +10,38 @@ import android.text.format.DateFormat
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.*
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
 import de.mr_pine.xkcdfeed.composables.main.MainContent
+import de.mr_pine.xkcdfeed.composables.settings.SettingsComposable
+import de.mr_pine.xkcdfeed.composables.settings.Theme
+import de.mr_pine.xkcdfeed.composables.settings.settingsDataStore
 import de.mr_pine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 private const val TAG = "MainActivity"
 
 val Context.userDataStore: DataStore<Preferences> by preferencesDataStore(name = "user-data")
 
-@ExperimentalFoundationApi @ObsoleteCoroutinesApi
-@ExperimentalComposeUiApi@ExperimentalPagerApi @ExperimentalMaterialApi
 class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent?) {
@@ -49,9 +52,13 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
 
-    @ObsoleteCoroutinesApi
-    @ExperimentalFoundationApi
-    @ExperimentalComposeUiApi
+    @OptIn(
+        ExperimentalPagerApi::class,
+        androidx.compose.ui.ExperimentalComposeUiApi::class,
+        androidx.compose.foundation.ExperimentalFoundationApi::class,
+        androidx.compose.material.ExperimentalMaterialApi::class,
+        kotlinx.coroutines.ObsoleteCoroutinesApi::class
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate: ${intent.data}")
@@ -72,9 +79,15 @@ class MainActivity : ComponentActivity() {
 
         Firebase.messaging.subscribeToTopic("newComic")
 
+        val themeSettingFlow = this.settingsDataStore.data.map {
+            if (it[intPreferencesKey("theme")] != null) enumValues<Theme>()[it[intPreferencesKey("theme")]!!] else Theme.SYSTEM
+        }
+
         setContent {
             val scope = rememberCoroutineScope()
             navController = rememberNavController()
+
+            val loginViewModel: LoginViewModel = viewModel()
 
             val singleComicViewModel: SingleComicViewModel = viewModel()
 
@@ -85,30 +98,32 @@ class MainActivity : ComponentActivity() {
                     DateFormat.getDateFormat(this),
                     this::startActivity,
                     navController::navigate,
+                    this.baseContext,
+                    loginViewModel,
                     singleComicViewModel::addToComicCache,
                     singleComicViewModel::setComicCacheImageLoaded
                 )
-            ).get(MainViewModel::class.java)
+            )[MainViewModel::class.java]
 
-            if (mainViewModel.latestComicsList.isEmpty()) {
+            if (!mainViewModel.latestComicsInitialized) {
                 mainViewModel.addLatestComics(4, this)
-
-                scope.launch(Dispatchers.IO) {
-                    val favList = mainViewModel.favoriteListFlow.first()
-                    for (i in favList) {
-                        mainViewModel.addComicSync(
-                            i,
-                            this@MainActivity,
-                            MainViewModel.Tab.FAVORITES
-                        )
-                    }
-                    Log.d(TAG, "onCreate: ${Thread.currentThread().name}")
-                }
             }
+            mainViewModel.initFavoriteList(this)
+
+            Log.d(TAG, "onCreate/AUTH: ${loginViewModel.loadingState}")
 
             var lastDestination by remember { mutableStateOf("null") }
 
-            XKCDFeedTheme {
+            val themeSetting by themeSettingFlow.collectAsState(initial = Theme.SYSTEM)
+
+            XKCDFeedTheme(
+                darkTheme = when (themeSetting) {
+                    Theme.LIGHT -> false
+                    Theme.DARK -> true
+                    Theme.SYSTEM -> isSystemInDarkTheme()
+                }
+            ) {
+
                 val rootUri = "xkcd.com"
                 NavHost(navController = navController, startDestination = "mainView") {
                     composable(
@@ -136,32 +151,55 @@ class MainActivity : ComponentActivity() {
                         )
                     ) { backStackEntry ->
                         val comicNumber = backStackEntry.arguments?.getInt("number")
-                        if (lastDestination != "singleView") singleComicViewModel.setComic(
-                            comicNumber ?: mainViewModel.latestComicNumber, this@MainActivity
-                        )
+
+                        if (lastDestination != "singleView") singleComicViewModel.currentComic =
+                            comicNumber?.let { mainViewModel.loadComic(it) }
+
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
                             setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
-                            navigate = navController::navigate
+                            navigateHome = {
+                                Log.d(TAG, "onCreate: navigating home $backStackEntry, $navController")
+                                navController.navigateUp()
+                            }
                         )
                         lastDestination = "singleView"
                     }
                     composable(
                         route = "singleView"
                     ) {
-                        if (singleComicViewModel.currentComic.value == null) {
-                            singleComicViewModel.setComic(
-                                mainViewModel.latestComicNumber,
-                                this@MainActivity
-                            )
+                        if (singleComicViewModel.currentComic == null) {
+                            singleComicViewModel.currentComic =
+                                mainViewModel.loadComic(mainViewModel.latestComicNumber)
                         }
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
                             setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
-                            navigate = navController::navigate
+                            navigateHome = navController::navigateUp
                         )
+
+                        lastDestination = "singleView"
+                    }
+                    composable(route = "settings") {
+                        SettingsComposable(
+                            navigateBack = { navController.navigateUp() },
+                            loginViewModel = loginViewModel,
+                            mainViewModel = mainViewModel,
+                            context = this@MainActivity.baseContext,
+                            onLoginChanged = {
+                                scope.launch {
+                                    mainViewModel.initFavoriteList(
+                                        this@MainActivity,
+                                        true,
+                                        if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
+                                    )
+                                }
+                            }
+                        )
+
+                        lastDestination = "settings"
                     }
                 }
             }
