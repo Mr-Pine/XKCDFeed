@@ -22,10 +22,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -34,6 +36,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -72,6 +75,7 @@ fun SettingsComposable(
 
     val token = stringResource(R.string.default_web_client_id)
 
+    val localContext =  LocalContext.current
 
     Scaffold(
         topBar = {
@@ -85,6 +89,7 @@ fun SettingsComposable(
             )
         }
     ) {
+
         Settings(context, loginViewModel.signedIn) {
             settingsSection {
 
@@ -219,6 +224,9 @@ fun SettingsComposable(
                     )
 
                     context.startActivity(settingsIntent)
+                }
+                settingsItem("Show Open Source Licenses") {
+                    localContext.startActivity(Intent(localContext, OssLicensesMenuActivity::class.java))
                 }
             }
         }
@@ -426,3 +434,4 @@ enum class Theme {
         }
     }
 }
+
