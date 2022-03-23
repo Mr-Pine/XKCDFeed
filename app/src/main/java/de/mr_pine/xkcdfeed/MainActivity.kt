@@ -159,7 +159,10 @@ class MainActivity : ComponentActivity() {
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
                             setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
-                            navigate = navController::navigate
+                            navigateHome = {
+                                Log.d(TAG, "onCreate: navigating home $backStackEntry, $navController")
+                                navController.navigateUp()
+                            }
                         )
                         lastDestination = "singleView"
                     }
@@ -174,7 +177,7 @@ class MainActivity : ComponentActivity() {
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
                             setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
-                            navigate = navController::navigate
+                            navigateHome = navController::navigateUp
                         )
 
                         lastDestination = "singleView"

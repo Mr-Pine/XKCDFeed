@@ -578,7 +578,7 @@ fun SingleViewContentStateful(
     singleViewModel: SingleComicViewModel,
     mainViewModel: MainViewModel,
     setComic: (Int) -> Unit,
-    navigate: (String) -> Unit
+    navigateHome: () -> Unit
 ) {
     val currentComic = singleViewModel.currentComic
     val favoriteList = mainViewModel.favoriteList
@@ -593,7 +593,7 @@ fun SingleViewContentStateful(
             maxNumber = mainViewModel.latestComicNumber,
             colorMatrix = ColorMatrix(mainViewModel.matrix.toColorMatrix()),
             startActivity = { mainViewModel.startActivity(it) },
-            navigateHome = { navigate("mainView") }
+            navigateHome = navigateHome
         )
     } else {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

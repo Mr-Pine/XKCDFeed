@@ -64,7 +64,6 @@ class MainViewModel(
 
         //HSV 180 rotation
         matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = 1/ sqrt(2f)))
-        Log.d(TAG, "\n${matrix.matrixToString()}")
         matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = -sqrt(1/3f)))
         val transformedWeights = arrayOf(floatArrayOf(wR, wG, wB)).matrixMultiply(matrix.cutTo(3,3)).matrixMultiply(matrix.cutTo(3,3))
         val shearX = (transformedWeights[0][0]/transformedWeights[0][2])
