@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,19 +35,19 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import de.mr_pine.xkcdfeed.LoginViewModel
-import de.mr_pine.xkcdfeed.MainViewModel
+import de.mr_pine.xkcdfeed.*
 import de.mr_pine.xkcdfeed.R
-import de.mr_pine.xkcdfeed.userDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.json.JSONArray
+
 
 private const val TAG = "Settings"
 
@@ -72,6 +73,7 @@ fun SettingsComposable(
 
     val token = stringResource(R.string.default_web_client_id)
 
+    val localContext = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -85,13 +87,17 @@ fun SettingsComposable(
             )
         }
     ) {
-        Settings(context, loginViewModel.signedIn) {
+
+        Settings(context/*, loginViewModel.signedIn*/) {
             settingsSection {
 
                 settingsItem(
                     label = "Cloud synchronisation",
                     description = if (loginViewModel.signedIn) "Logged in as ${loginViewModel.user?.displayName}. Tap to log out" else "Tap to log in",
-                    icon = if (loginViewModel.signedIn) Icons.Outlined.Cloud else Icons.Outlined.CloudOff
+                    icon = SettingsIcon(
+                        if (loginViewModel.signedIn) Icons.Outlined.Cloud else Icons.Outlined.CloudOff,
+                        loginViewModel.loadingState == LoadingState.LOADING
+                    )
                 ) {
                     if (loginViewModel.signedIn) {
                         Log.d(TAG, "SettingsComposable: logged in")
@@ -179,7 +185,7 @@ fun SettingsComposable(
                     ) {
                         val oldReference =
                             Firebase.firestore.collection("Favourites/${loginViewModel.user?.uid}/ComicObjects")
-                        
+
                         oldReference.get().addOnSuccessListener { collection ->
                             val documents = collection.documents
                             val listValues = documents.map { documentSnapshot ->
@@ -198,7 +204,10 @@ fun SettingsComposable(
 
                             onLoginChanged()
                         }.addOnFailureListener { e ->
-                            Log.e(TAG, "initFavoriteList: get old list $e user: ${loginViewModel.user?.uid}")
+                            Log.e(
+                                TAG,
+                                "initFavoriteList: get old list $e user: ${loginViewModel.user?.uid}"
+                            )
                         }
                     }
                 }
@@ -219,6 +228,14 @@ fun SettingsComposable(
                     )
 
                     context.startActivity(settingsIntent)
+                }
+                settingsItem("Show Open Source Licenses") {
+                    localContext.startActivity(
+                        Intent(
+                            localContext,
+                            OssLicensesMenuActivity::class.java
+                        )
+                    )
                 }
             }
         }
@@ -274,7 +291,7 @@ class Settings(val context: Context) {
         fun settingsItem(
             label: String,
             description: String = "",
-            icon: ImageVector? = null,
+            icon: SettingsIcon? = null,
             onClick: () -> Unit = {}
         ) {
             this.list.add {
@@ -288,10 +305,22 @@ class Settings(val context: Context) {
             }
         }
 
+        fun settingsItem(
+            label: String,
+            description: String = "",
+            icon: ImageVector,
+            onClick: () -> Unit = {}
+        ) = settingsItem(
+            label = label,
+            description = description,
+            icon = SettingsIcon(icon, false),
+            onClick = onClick
+        )
+
         inline fun <reified T : Enum<T>> radioSettingsItem(
             label: String,
             identifier: String,
-            icon: ImageVector? = null,
+            icon: SettingsIcon? = null,
             default: T
         ) {
             this.list.add {
@@ -368,8 +397,20 @@ class Settings(val context: Context) {
             }
         }
 
+        inline fun <reified T : Enum<T>> radioSettingsItem(
+            label: String,
+            identifier: String,
+            icon: ImageVector,
+            default: T
+        ) = radioSettingsItem(
+            label,
+            identifier,
+            icon = SettingsIcon(icon, false),
+            default = default
+        )
+
         @Composable
-        fun ItemBoilerplate(icon: ImageVector?, label: String, description: String) {
+        fun ItemBoilerplate(icon: SettingsIcon?, label: String, description: String) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -379,11 +420,10 @@ class Settings(val context: Context) {
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                     modifier = Modifier.width(60.dp)
                 ) { //icon
-                    if (icon != null) {
-                        Icon(imageVector = icon, contentDescription = "icon")
-                    }
+                    icon?.Show()
                 }
                 Column(modifier = Modifier.padding(vertical = 15.dp)) {
                     Text(text = label, fontSize = 18.sp, fontWeight = FontWeight.W500)
@@ -423,6 +463,17 @@ enum class Theme {
     SYSTEM {
         override fun toString(): String {
             return "Use system setting"
+        }
+    }
+}
+
+class SettingsIcon(var icon: ImageVector?, var loading: Boolean) {
+    @Composable
+    fun Show() {
+        if (loading || icon == null) {
+            CircularProgressIndicator(modifier = Modifier.size(30.dp))
+        } else {
+            Icon(imageVector = icon!!, contentDescription = "icon")
         }
     }
 }

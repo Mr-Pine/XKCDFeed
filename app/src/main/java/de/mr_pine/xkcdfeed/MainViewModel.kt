@@ -7,9 +7,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.ModalBottomSheetValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -19,10 +17,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import de.mr_pine.xkcdfeed.composables.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import java.text.DateFormat
+import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.math.PI
+import kotlin.math.sqrt
 
 
 class MainViewModel(
@@ -30,11 +32,51 @@ class MainViewModel(
     val dateFormat: DateFormat,
     val startActivity: (Intent) -> Unit,
     val navigateTo: (String) -> Unit,
+    private val context: Context,
     private val loginViewModel: LoginViewModel,
     private val addToComicCache: (XKCDComic, Boolean) -> Unit,
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
 ) : ViewModel() {
     private val TAG = "MainViewModel"
+
+    var matrix by mutableStateOf(identityMatrix(4, 4))
+
+
+    //No clue why these values work but I found them to work best but only if I run the Matrix multiply on them twice
+    private val wR = 50f
+    private val wG = 10f
+    private val wB = 4f
+
+    init { //implementation of http://www.graficaobscura.com/matrix/index.html
+        //RGB invert
+        matrix = matrix.matrixMultiply(arrayOf(
+            floatArrayOf(-1f, 0f, 0f, 0f),
+            floatArrayOf(0f, -1f, 0f, 0f),
+            floatArrayOf(0f, 0f, -1f, 0f),
+            floatArrayOf(0f, 0f, 0f, -1f),
+        ))
+        matrix = matrix.matrixAdd(arrayOf(
+            floatArrayOf(0f, 0f, 0f, 0f),
+            floatArrayOf(0f, 0f, 0f, 0f),
+            floatArrayOf(0f, 0f, 0f, 0f),
+            floatArrayOf(255f, 255f, 255f, 0f),
+        ))
+
+        //HSV 180 rotation
+        matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = 1/ sqrt(2f)))
+        matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = -sqrt(1/3f)))
+        val transformedWeights = arrayOf(floatArrayOf(wR, wG, wB)).matrixMultiply(matrix.cutTo(3,3)).matrixMultiply(matrix.cutTo(3,3))
+        val shearX = (transformedWeights[0][0]/transformedWeights[0][2])
+        val shearY = (transformedWeights[0][1]/transformedWeights[0][2])
+        matrix = matrix.matrixMultiply(shearZ(shearX, shearY))
+        matrix = matrix.matrixMultiply(zRotation(PI.toFloat()))
+        matrix = matrix.matrixMultiply(shearZ(-shearX, -shearY))
+        matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = sqrt(1/3f)))
+        matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = -1/ sqrt(2f)))
+
+
+    }
+
 
     private val db = Firebase.firestore
 
@@ -65,6 +107,19 @@ class MainViewModel(
     var favoriteListInitialized = false
     var lastClearType = ClearType.UNDEFINED
     var favoriteList = mutableStateListOf<Int>()
+
+    var cacheList = ConcurrentLinkedQueue<XKCDComic>()
+
+    fun loadComic(id: Int): XKCDComic {
+        val match = cacheList.indexOfFirst { it.id == id }
+        return if (match == -1) {
+            val newComic = XKCDComic(id, viewModelScope, context) {}
+            cacheList.add(newComic)
+            newComic
+        } else {
+            cacheList.elementAt(match)
+        }
+    }
 
     enum class ClearType {
         LOCAL, FIREBASE, UNDEFINED
@@ -203,7 +258,7 @@ class MainViewModel(
         try {
             favoriteComicsList.sortByDescending { it.id }
         } catch (e: Exception) {
-            Log.e(TAG, "addToFavoriteComicList: Error occurred: $e", )
+            Log.e(TAG, "addToFavoriteComicList: Error occurred: $e")
         }
     }
 
@@ -227,7 +282,13 @@ class MainViewModel(
             (if (to == Tab.LATEST) latestImagesLoadedMap else favoriteImagesLoadedMap)[number] =
                 false
         }
-        XKCDComic.getComic(
+        val comic = loadComic(number)
+        if (to == Tab.LATEST) {
+            addToLatestComicList(comic)
+        } else {
+            addToFavoriteComicList(comic)
+        }
+        /*XKCDComic.getComic(
             number = number,
             coroutineScope = viewModelScope,
             context = context,
@@ -242,7 +303,7 @@ class MainViewModel(
                 addToFavoriteComicList(it)
             }
             addToComicCache(it, false)
-        }
+        }*/
     }
     //</editor-fold>
 
@@ -282,6 +343,7 @@ class MainViewModelFactory(
     private val dateFormat: DateFormat,
     private val startActivity: (Intent) -> Unit,
     private val navigateTo: (String) -> Unit,
+    private val context: Context,
     private val loginViewModel: LoginViewModel,
     private val addToComicCache: (XKCDComic, Boolean) -> Unit,
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
@@ -295,6 +357,7 @@ class MainViewModelFactory(
                 dateFormat,
                 startActivity,
                 navigateTo,
+                context,
                 loginViewModel,
                 addToComicCache,
                 setComicCacheImageLoaded

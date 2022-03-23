@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
         Firebase.messaging.subscribeToTopic("newComic")
 
         val themeSettingFlow = this.settingsDataStore.data.map {
-            if(it[intPreferencesKey("theme")] != null) enumValues<Theme>()[it[intPreferencesKey("theme")]!!] else Theme.SYSTEM
+            if (it[intPreferencesKey("theme")] != null) enumValues<Theme>()[it[intPreferencesKey("theme")]!!] else Theme.SYSTEM
         }
 
         setContent {
@@ -98,6 +98,7 @@ class MainActivity : ComponentActivity() {
                     DateFormat.getDateFormat(this),
                     this::startActivity,
                     navController::navigate,
+                    this.baseContext,
                     loginViewModel,
                     singleComicViewModel::addToComicCache,
                     singleComicViewModel::setComicCacheImageLoaded
@@ -115,11 +116,14 @@ class MainActivity : ComponentActivity() {
 
             val themeSetting by themeSettingFlow.collectAsState(initial = Theme.SYSTEM)
 
-            XKCDFeedTheme(darkTheme = when(themeSetting){
-                Theme.LIGHT -> false
-                Theme.DARK -> true
-                Theme.SYSTEM -> isSystemInDarkTheme()
-            }) {
+            XKCDFeedTheme(
+                darkTheme = when (themeSetting) {
+                    Theme.LIGHT -> false
+                    Theme.DARK -> true
+                    Theme.SYSTEM -> isSystemInDarkTheme()
+                }
+            ) {
+
                 val rootUri = "xkcd.com"
                 NavHost(navController = navController, startDestination = "mainView") {
                     composable(
@@ -147,43 +151,55 @@ class MainActivity : ComponentActivity() {
                         )
                     ) { backStackEntry ->
                         val comicNumber = backStackEntry.arguments?.getInt("number")
-                        if (lastDestination != "singleView") singleComicViewModel.setComic(
-                            comicNumber ?: mainViewModel.latestComicNumber, this@MainActivity
-                        )
+
+                        if (lastDestination != "singleView") singleComicViewModel.currentComic =
+                            comicNumber?.let { mainViewModel.loadComic(it) }
+
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
                             setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
-                            navigate = navController::navigate
+                            navigateHome = {
+                                Log.d(TAG, "onCreate: navigating home $backStackEntry, $navController")
+                                navController.navigateUp()
+                            }
                         )
                         lastDestination = "singleView"
                     }
                     composable(
                         route = "singleView"
                     ) {
-                        if (singleComicViewModel.currentComic.value == null) {
-                            singleComicViewModel.setComic(
-                                mainViewModel.latestComicNumber,
-                                this@MainActivity
-                            )
+                        if (singleComicViewModel.currentComic == null) {
+                            singleComicViewModel.currentComic =
+                                mainViewModel.loadComic(mainViewModel.latestComicNumber)
                         }
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
                             setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
-                            navigate = navController::navigate
+                            navigateHome = navController::navigateUp
                         )
+
+                        lastDestination = "singleView"
                     }
-                    composable(route = "settings"){
-                        SettingsComposable(navigateBack = {navController.navigateUp()}, loginViewModel = loginViewModel, mainViewModel = mainViewModel, context = this@MainActivity.baseContext, onLoginChanged = {
-                            scope.launch {
-                                mainViewModel.initFavoriteList(
-                                    this@MainActivity,
-                                    true,
-                                    if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
-                                )
+                    composable(route = "settings") {
+                        SettingsComposable(
+                            navigateBack = { navController.navigateUp() },
+                            loginViewModel = loginViewModel,
+                            mainViewModel = mainViewModel,
+                            context = this@MainActivity.baseContext,
+                            onLoginChanged = {
+                                scope.launch {
+                                    mainViewModel.initFavoriteList(
+                                        this@MainActivity,
+                                        true,
+                                        if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
+                                    )
+                                }
                             }
-                        })
+                        )
+
+                        lastDestination = "settings"
                     }
                 }
             }

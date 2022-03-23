@@ -274,7 +274,6 @@ fun Tab1(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
     }) {
         ComicList(
             list = viewModel.latestComicsList,
-            imagesLoadedMap = viewModel.latestImagesLoadedMap,
             viewModel = viewModel,
             showSingleComic = showSingleComic
         )
@@ -297,7 +296,6 @@ fun Tab2(viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCD
     }) {
         ComicList(
             list = viewModel.favoriteComicsList,
-            imagesLoadedMap = viewModel.favoriteImagesLoadedMap,
             viewModel = viewModel,
             showSingleComic = showSingleComic,
             state = viewModel.favListState
@@ -309,7 +307,6 @@ fun Tab2(viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCD
 @Composable
 fun ComicList(
     list: List<XKCDComic>,
-    imagesLoadedMap: MutableMap<Int, Boolean>,
     viewModel: MainViewModel,
     showSingleComic: (XKCDComic) -> Unit,
     state: LazyListState? = null
@@ -322,14 +319,20 @@ fun ComicList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         state = state ?: rememberLazyListState()
     ) {
-        items(list) { item ->
+        items(list.let {
+            try {
+                it.sortedBy { item -> -item.id }
+            } catch (e: Exception) {
+                it
+            }
+        }) { item ->
             ComicCard(
                 item,
                 viewModel.dateFormat,
-                imagesLoadedMap,
                 viewModel.favoriteList,
                 viewModel::addFavorite,
                 viewModel::removeFavorite,
+                viewModel.matrix,
                 viewModel::showBottomSheet,
                 showSingleComic
             )
