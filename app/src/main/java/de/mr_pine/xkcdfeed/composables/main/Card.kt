@@ -31,7 +31,7 @@ import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.placeholder
 import com.google.accompanist.placeholder.material.shimmer
 import de.mr_pine.xkcdfeed.XKCDComic
-import de.mr_pine.xkcdfeed.composables.toColorMatrix
+import de.mr_pine.xkcdfeed.toColorMatrix
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
 import de.mr_pine.xkcdfeed.ui.theme.Gray400
 import kotlinx.coroutines.launch

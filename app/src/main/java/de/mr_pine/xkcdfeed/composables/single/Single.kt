@@ -46,7 +46,7 @@ import com.google.accompanist.placeholder.material.placeholder
 import de.mr_pine.xkcdfeed.MainViewModel
 import de.mr_pine.xkcdfeed.SingleComicViewModel
 import de.mr_pine.xkcdfeed.XKCDComic
-import de.mr_pine.xkcdfeed.composables.toColorMatrix
+import de.mr_pine.xkcdfeed.toColorMatrix
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
 import de.mr_pine.xkcdfeed.ui.theme.Gray400
 import de.mr_pine.zoomables.Zoomable

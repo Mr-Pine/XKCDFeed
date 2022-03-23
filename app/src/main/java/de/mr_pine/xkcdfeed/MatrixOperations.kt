@@ -1,4 +1,4 @@
-package de.mr_pine.xkcdfeed.composables
+package de.mr_pine.xkcdfeed
 
 import kotlin.math.cos
 import kotlin.math.sin
