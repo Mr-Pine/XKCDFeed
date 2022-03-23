@@ -7,7 +7,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,12 +21,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.input.pointer.*
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontStyle
@@ -35,22 +35,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastAny
-import androidx.compose.ui.util.fastForEach
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import coil.size.Size
 import com.google.accompanist.placeholder.material.placeholder
 import de.mr_pine.xkcdfeed.MainViewModel
 import de.mr_pine.xkcdfeed.SingleComicViewModel
 import de.mr_pine.xkcdfeed.XKCDComic
+import de.mr_pine.xkcdfeed.composables.toColorMatrix
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
 import de.mr_pine.xkcdfeed.ui.theme.Gray400
+import de.mr_pine.zoomables.Zoomable
+import de.mr_pine.zoomables.rememberZoomableState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.DateFormat
-import kotlin.math.*
 import kotlin.random.Random
 
 private const val TAG = "Single"
@@ -67,17 +70,22 @@ fun SingleViewContent(
     setNumber: (Int) -> Unit,
     setFavorite: (XKCDComic) -> Unit,
     removeFavorite: (XKCDComic) -> Unit,
+    colorMatrix: ColorMatrix,
     navigateHome: () -> Unit,
     startActivity: (Intent) -> Unit
 ) {
-    LaunchedEffect(key1 = comic.id) {
-        comic.loadImage()
-    }
 
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
 
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    val painter = rememberAsyncImagePainter(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(comic.imageURL)
+            .size(Size.ORIGINAL) // Set the target size to load the image at.
+            .build()
+    )
 
     val orientation = LocalConfiguration.current.orientation
     LaunchedEffect(key1 = Unit, block = {
@@ -181,24 +189,32 @@ fun SingleViewContent(
                 .padding(bottom = with(LocalDensity.current) { (parentSize.height - scaffoldState.bottomSheetState.offset.value).toDp() }),
             contentAlignment = Alignment.Center
         ) {
-            val bitmap =
-                if (MaterialTheme.colors.isLight) comic.bitmapLight else comic.bitmapDark
-            Log.d(TAG, "SingleViewContent: $bitmap")
-            if (bitmap != null) {
-                ZoomableImage(
-                    bitmap = bitmap.asImageBitmap(),
-                    { current -> if (current < maxNumber) setNumber(current + 1) },
-                    { current -> if (current > 0) setNumber(current - 1) },
-                    getCurrentNumber = { currentNumber }
-                )
+            val zoomableState = rememberZoomableState()
+            if (painter.state is AsyncImagePainter.State.Success) {
+                Zoomable(
+                    coroutineScope = scope,
+                    zoomableState = zoomableState,
+                    onSwipeLeft = { if (currentNumber < maxNumber) setNumber(currentNumber + 1) },
+                    onSwipeRight = { if (currentNumber > 0) setNumber(currentNumber - 1) },
+                ) {
+                    Image(
+                        painter,
+                        contentDescription = "Comic Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RectangleShape)
+                            .padding(2.dp),
+                        colorFilter = if(MaterialTheme.colors.isLight) null else ColorFilter.colorMatrix(colorMatrix)
+                    )
+                }
             } else {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
     }
 }
 
-@ExperimentalFoundationApi
+/*@ExperimentalFoundationApi
 @Composable
 fun ZoomableImage(
     bitmap: ImageBitmap,
@@ -411,7 +427,7 @@ fun ZoomableImage(
             contentScale = ContentScale.Fit
         )
     }
-}
+}*/
 
 
 @Composable
@@ -501,7 +517,8 @@ fun bottomSheetContent(
                 }
             }
             Text(
-                text = comic.description ?: "I am a description text. If you see me, something isn't working as intended. Written at 2:36 a.m.",
+                text = comic.description
+                    ?: "I am a description text. If you see me, something isn't working as intended. Written at 2:36 a.m.",
                 modifier = Modifier.placeholder(comic.description == null)
             )
             Spacer(modifier = Modifier.height(18.dp))
@@ -572,8 +589,9 @@ fun SingleViewContentStateful(
             dateFormat = mainViewModel.dateFormat,
             setFavorite = mainViewModel::addFavorite,
             removeFavorite = mainViewModel::removeFavorite,
-            setNumber = {singleViewModel.currentComic = mainViewModel.loadComic(it)},
+            setNumber = { singleViewModel.currentComic = mainViewModel.loadComic(it) },
             maxNumber = mainViewModel.latestComicNumber,
+            colorMatrix = ColorMatrix(mainViewModel.matrix.toColorMatrix()),
             startActivity = { mainViewModel.startActivity(it) },
             navigateHome = { navigate("mainView") }
         )

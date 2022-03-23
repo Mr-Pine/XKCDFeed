@@ -1,14 +1,15 @@
 package de.mr_pine.xkcdfeed.composables.main
 
-import android.util.Log
-import androidx.compose.foundation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,17 +17,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
+import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.placeholder
+import com.google.accompanist.placeholder.material.shimmer
 import de.mr_pine.xkcdfeed.XKCDComic
 import de.mr_pine.xkcdfeed.composables.toColorMatrix
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
@@ -79,56 +82,6 @@ fun ComicCard(
     onLongPress: suspend (XKCDComic) -> Unit,
     showSingle: (XKCDComic) -> Unit
 ) {
-    val painter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(xkcdComic.imageUrl)
-            .size(Size.ORIGINAL) // Set the target size to load the image at.
-            .build()
-    )
-
-    LaunchedEffect(key1 = Unit) {
-        Log.d(TAG, "ComicCard: LaunchedEffect card number ${xkcdComic.id}")
-        xkcdComic.loadImage()
-    }
-
-    /*val angle = 180f
-    val sin = sin(angle * (2* PI.toFloat()) / 360)
-    val cos = cos(angle * (2* PI.toFloat()) / 360)
-    val n3Cos = (1 - cos) / 3f
-    val sinSqrt13 = sqrt(1/3f) * sin
-    val fac = 1f
-    val add = (fac - 1) * 255/2
-    val matrix = ColorMatrix(floatArrayOf(
-        fac*(cos + n3Cos)         , fac*(n3Cos + sinSqrt13) , fac*(n3Cos - sinSqrt13) , 0f, add,
-        fac*(n3Cos - sinSqrt13)   , fac*(cos + n3Cos)       , fac*(n3Cos + sinSqrt13) , 0f, add,
-        fac*(n3Cos + sinSqrt13)   , fac*(n3Cos - sinSqrt13) , fac*(cos + n3Cos)       , 0f, add,
-        0f                  , 0f                , 0f                , 1f, 0f,
-    ))*/
-    /*Log.d(TAG, "ComicCard: ${
-        arrayOf(
-            floatArrayOf(1f, 0f, 0f, 1f),
-            floatArrayOf(0f, 1f, 2f, 0f),
-            floatArrayOf(0f, 3f, 1f, 0f),
-            floatArrayOf(4f, 0f, 0f, 1f)
-        ).matrixMultiply(
-            arrayOf(
-                floatArrayOf(5f, 0f, 0f, 1f),
-                floatArrayOf(0f, 0f, 1f, 0f),
-                floatArrayOf(0f, 1f, 0f, 0f),
-                floatArrayOf(1f, 0f, 0f, 5f)
-            ) 
-        ).joinToString { it.joinToString(", ") + "\n" }
-    }")*/
-
-    /*val matrix = ColorMatrix(floatArrayOf(
-        -1f, 0f, 0f, 0f, 255f,
-        0f, -1f, 0f, 0f, 255f,
-        0f, 0f, -1f, 0f, 255f,
-        0f, 0f, 0f, 1f, 0f
-    ))*/
-
-
-
     val colorFilter = ColorFilter.colorMatrix(ColorMatrix(invertMatrix.toColorMatrix()))
 
     val scope = rememberCoroutineScope()
@@ -193,36 +146,31 @@ fun ComicCard(
                     .padding(bottom = 8.dp)
                     .placeholder(xkcdComic.pubDate == null)
             )
-            val bitmap =
-                if (MaterialTheme.colors.isLight) xkcdComic.bitmapLight else xkcdComic.bitmapDark
-            if (bitmap != null) {
-                Image(
-                    //painter = painter,
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = "Image of the comic",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                )
-                Image(
-                    painter = painter,
-                    //bitmap = bitmap.asImageBitmap(),
-                    contentDescription = "Image of the comic",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    colorFilter = colorFilter
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(color = MaterialTheme.colors.primary.copy(alpha = 0.5F))
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-            }
+            val painter = rememberAsyncImagePainter(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(xkcdComic.imageURL)
+                    .size(Size.ORIGINAL) // Set the target size to load the image at.
+                    .build()
+            )
+
+            Image(
+                painter = painter,
+                //bitmap = bitmap.asImageBitmap(),
+                contentDescription = "Image of the comic",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (painter.state is AsyncImagePainter.State.Success) Modifier else Modifier.sizeIn(
+                            minHeight = 200.dp
+                        )
+                    )
+                    .placeholder(
+                        painter.state !is AsyncImagePainter.State.Success,
+                        highlight = PlaceholderHighlight.shimmer()
+                    ),
+                colorFilter = if (MaterialTheme.colors.isLight) null else colorFilter
+            )
             Text(
                 text = xkcdComic.description
                     ?: "I am a description text. If you see me, something isn't working as intended. Written at 2:36 a.m.",

@@ -42,11 +42,10 @@ class MainViewModel(
     var matrix by mutableStateOf(identityMatrix(4, 4))
 
 
-    private val wR = -0.6612f/*0.701f*//*0.6214f*//*1.0f*///0.2f//0.2f//0.2126f//0.299f//0.3086f
-    private val wG = -0.4018f/*0.413f*//*0.3906f*//*0.4f*///0.8f//0.8f//7152f//587f//0.6094f
-    private val wB = -0.8680f/*0.818f*//*0.9180f*//*0.9f*///0.06f//0.06f//0.0722f//0.114f//0.0820f
-    
-    //TODO: Werte nicht perfekt. Slider zum gute Werte finden einbauen
+    //No clue why these values work but I found them to work best but only if I run the Matrix multiply on them twice
+    private val wR = 50f
+    private val wG = 10f
+    private val wB = 4f
 
     init { //implementation of http://www.graficaobscura.com/matrix/index.html
         //RGB invert
@@ -67,7 +66,7 @@ class MainViewModel(
         matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = 1/ sqrt(2f)))
         Log.d(TAG, "\n${matrix.matrixToString()}")
         matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = -sqrt(1/3f)))
-        val transformedWeights = arrayOf(floatArrayOf(wR, wG, wB)).matrixMultiply(matrix.cutTo(3,3))
+        val transformedWeights = arrayOf(floatArrayOf(wR, wG, wB)).matrixMultiply(matrix.cutTo(3,3)).matrixMultiply(matrix.cutTo(3,3))
         val shearX = (transformedWeights[0][0]/transformedWeights[0][2])
         val shearY = (transformedWeights[0][1]/transformedWeights[0][2])
         matrix = matrix.matrixMultiply(shearZ(shearX, shearY))
