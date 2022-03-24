@@ -158,7 +158,6 @@ class MainActivity : ComponentActivity() {
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
-                            setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
                             navigateHome = {
                                 Log.d(TAG, "onCreate: navigating home $backStackEntry, $navController")
                                 navController.navigateUp()
@@ -176,7 +175,6 @@ class MainActivity : ComponentActivity() {
                         SingleViewContentStateful(
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
-                            setComic = { singleComicViewModel.setComic(it, this@MainActivity) },
                             navigateHome = navController::navigateUp
                         )
 

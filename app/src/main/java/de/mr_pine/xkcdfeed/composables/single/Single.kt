@@ -93,8 +93,8 @@ fun SingleViewContent(
             scaffoldState.bottomSheetState.expand()
     })
 
-    val currentNumber = comic.id
-    var currentNumberString by remember(currentNumber) { mutableStateOf(currentNumber.toString()) }
+    fun getId() = comic.id
+    var currentNumberString by remember(comic.id) { mutableStateOf(comic.id.toString()) }
 
     var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
     BottomSheetScaffold(
@@ -112,8 +112,8 @@ fun SingleViewContent(
                         Icon(Icons.Default.Close, "Close")
                     }
                     IconButton(
-                        onClick = { setNumber(currentNumber - 1) },
-                        enabled = currentNumber > 0
+                        onClick = { setNumber(comic.id - 1) },
+                        enabled = comic.id > 0
                     ) {
                         Icon(Icons.Default.ArrowBack, "Previous Comic")
                     }
@@ -151,8 +151,8 @@ fun SingleViewContent(
                         })
                     )
                     IconButton(
-                        onClick = { setNumber(currentNumber + 1) },
-                        enabled = currentNumber < maxNumber
+                        onClick = { setNumber(comic.id + 1) },
+                        enabled = comic.id < maxNumber
                     ) {
                         Icon(Icons.Default.ArrowForward, "Next Comic")
                     }
@@ -194,8 +194,12 @@ fun SingleViewContent(
                 Zoomable(
                     coroutineScope = scope,
                     zoomableState = zoomableState,
-                    onSwipeLeft = { if (currentNumber < maxNumber) setNumber(currentNumber + 1) },
-                    onSwipeRight = { if (currentNumber > 0) setNumber(currentNumber - 1) },
+                    onSwipeLeft = {
+                        if (getId() < maxNumber) setNumber(getId() + 1)
+                                  },
+                    onSwipeRight = {
+                        if (getId() > 0) setNumber(getId() - 1)
+                                   },
                 ) {
                     Image(
                         painter,
@@ -577,7 +581,6 @@ fun bottomSheetContent(
 fun SingleViewContentStateful(
     singleViewModel: SingleComicViewModel,
     mainViewModel: MainViewModel,
-    setComic: (Int) -> Unit,
     navigateHome: () -> Unit
 ) {
     val currentComic = singleViewModel.currentComic
