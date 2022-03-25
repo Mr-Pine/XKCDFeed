@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   x="0pt"
+   y="0pt"
+   width="520pt"
+   height="520pt"
+   viewBox="0 0 520 520"
+   version="1.1"
+   id="svg175"
+   sodipodi:docname="Notification.svg"
+   inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs179" />
+  <sodipodi:namedview
+     id="namedview177"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="pt"
+     showgrid="false"
+     inkscape:zoom="0.84852814"
+     inkscape:cx="302.28815"
+     inkscape:cy="347.07158"
+     inkscape:window-width="2560"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="1" />
+  <g
+     id="1">
+    <title
+       id="title2">Notification</title>
+    <defs
+       id="defs12">
+      <title
+         id="title4">Path</title>
+      <g
+         id="2">
+        <defs
+           id="defs7">
+          <path
+             id="3"
+             d="M260.987,44.372 C278.03,39.3965,341.525,29.8484,379.106,40.512 C412.707,50.0462,433.181,65.4632,443.869,78.3435 C459.843,97.594,475.799,122.844,477.435,156.586 C479.023,189.342,477.252,224.48,465.836,247.998 C437.631,306.101,389.858,361.733,319.962,371.546 C278.911,377.309,216.806,345.38,193.972,301.342 C181.061,276.443,172.135,235.691,172.072,207.359 C171.895,128.237,196.223,63.2781,260.987,44.372 z" />
+        </defs>
+        <use
+           xlink:href="#3"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:13.882;"
+           id="use9" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#2"
+       id="use14" />
+    <defs
+       id="defs24">
+      <title
+         id="title16">Shape 54</title>
+      <g
+         id="4">
+        <defs
+           id="defs19">
+          <path
+             id="5"
+             d="M321.516,514.369 C321.516,508.181,323.063,467.238,324.429,429.624 C324.957,415.078,329.071,384.311,328.214,370.157" />
+        </defs>
+        <use
+           xlink:href="#5"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:12.1467;"
+           id="use21" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#4"
+       id="use26" />
+    <defs
+       id="defs36">
+      <title
+         id="title28">Path</title>
+      <g
+         id="6">
+        <defs
+           id="defs31">
+          <path
+             id="7"
+             d="M382.616,517.476 C382.616,517.476,377.986,500.364,370.25,473.701 C361.657,444.083,362.766,444.77,351.794,414.631 C347.966,404.115,339.015,379.158,335.398,368.563" />
+        </defs>
+        <use
+           xlink:href="#7"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:10.4115;"
+           id="use33" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#6"
+       id="use38" />
+    <defs
+       id="defs48">
+      <title
+         id="title40">Path</title>
+      <g
+         id="8">
+        <defs
+           id="defs43">
+          <path
+             id="9"
+             d="M71.7295,299.102 C70.9302,300.454,119.859,387.439,119.859,387.439 C119.859,387.439,141.582,366.718,141.582,366.718 C140.717,366.122,110.835,307.77,108.706,284.185 C108.538,282.328,77.3892,289.531,71.7295,299.102 z" />
+        </defs>
+        <use
+           xlink:href="#9"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;stroke-width:6.94098;"
+           id="use45" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#8"
+       id="use50" />
+    <defs
+       id="defs62">
+      <title
+         id="title52">Path</title>
+      <g
+         id="10">
+        <defs
+           id="defs55">
+          <path
+             id="11"
+             d="M132.584,339.683 C128.539,337.099,126.322,341.229,124.604,344.479 C121.857,349.676,126.031,358.372,132.731,358.237 C139.079,358.109,147.08,352.781,142.854,345.749 C140.346,341.576,136.799,341.409,132.584,339.683 z" />
+        </defs>
+        <use
+           xlink:href="#11"
+           style="fill:#000000;fill-opacity:1;fill-rule:nonzero;opacity:1;stroke:none;"
+           id="use57" />
+        <use
+           xlink:href="#11"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;stroke-width:6.94098;"
+           id="use59" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#10"
+       id="use64" />
+    <defs
+       id="defs74">
+      <title
+         id="title66">Path</title>
+      <g
+         id="12">
+        <defs
+           id="defs69">
+          <path
+             id="13"
+             d="M335.398,367.312 C326.184,375.13,286.429,402.367,276.648,409.74 C264.648,418.786,257.497,424.444,243.03,434.797 C234.895,440.619,219.374,452.133,216.649,451.314 C204.911,447.786,195.727,429.464,187.307,418.831 C174.143,402.207,151.32,378.548,135.95,357.764" />
+        </defs>
+        <use
+           xlink:href="#13"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;stroke-width:10.4115;"
+           id="use71" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#12"
+       id="use76" />
+    <defs
+       id="defs86">
+      <title
+         id="title78">Shape 42</title>
+      <g
+         id="14">
+        <defs
+           id="defs81">
+          <path
+             id="15"
+             d="M156.212,294.849 C157.336,294.565,158.488,294.322,159.669,294.09" />
+        </defs>
+        <use
+           xlink:href="#15"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:5.20573;"
+           id="use83" />
+      </g>
+    </defs>
+    <defs
+       id="defs98">
+      <title
+         id="title90">Shape 41</title>
+      <g
+         id="16">
+        <defs
+           id="defs93">
+          <path
+             id="17"
+             d="M152.507,296.009 C150.673,296.721,148.924,297.652,147.258,298.95" />
+        </defs>
+        <use
+           xlink:href="#17"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:5.20573;"
+           id="use95" />
+      </g>
+    </defs>
+    <g
+       id="use100">
+      <defs
+         id="defs1177">
+        <path
+           id="path1175"
+           d="m 152.507,296.009 c -1.834,0.712 -3.583,1.643 -5.249,2.941" />
+      </defs>
+      <path
+         id="use1179"
+         d="m 154.94965,294.77958 c -1.71681,0.79013 -5.63502,2.98961 -7.69165,4.17042"
+         style="fill:none;stroke:#000000;stroke-width:5.20573;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1"
+         sodipodi:nodetypes="cc" />
+    </g>
+    <defs
+       id="defs110">
+      <title
+         id="title102">Path</title>
+      <g
+         id="18">
+        <defs
+           id="defs105">
+          <path
+             id="19"
+             d="M134.104,263.864 C137.072,260.668,140.509,258.202,144.006,255.614" />
+        </defs>
+        <use
+           xlink:href="#19"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:5.20573;"
+           id="use107" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#18"
+       id="use112" />
+    <defs
+       id="defs122">
+      <title
+         id="title114">Path</title>
+      <g
+         id="20">
+        <defs
+           id="defs117">
+          <path
+             id="21"
+             d="M117.4,245.168 C119.713,236.94,122.546,228.24,126.083,220.461" />
+        </defs>
+        <use
+           xlink:href="#21"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:5.20573;"
+           id="use119" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#20"
+       id="use124" />
+    <defs
+       id="defs134">
+      <title
+         id="title126">Shape 40</title>
+      <g
+         id="22">
+        <defs
+           id="defs129">
+          <path
+             id="23"
+             d="M87.5623,226.652 C90.7485,217.256,91.3286,206.947,91.5432,197.106" />
+        </defs>
+        <use
+           xlink:href="#23"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:5.20573;"
+           id="use131" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#22"
+       id="use136" />
+    <defs
+       id="defs146">
+      <title
+         id="title138">Shape 39</title>
+      <g
+         id="24">
+        <defs
+           id="defs141">
+          <path
+             id="25"
+             d="M65.2129,247.225 C56.0001,233.89,51.1679,215.958,45.6081,201.127" />
+        </defs>
+        <use
+           xlink:href="#25"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:5.20573;"
+           id="use143" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#24"
+       id="use148" />
+    <defs
+       id="defs158">
+      <title
+         id="title150">Path</title>
+      <g
+         id="26">
+        <defs
+           id="defs153">
+          <path
+             id="27"
+             d="M19.563,243.894 C28.019,249.984,33.4465,259.389,40.4035,267.022" />
+        </defs>
+        <use
+           xlink:href="#27"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:5.20573;"
+           id="use155" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#26"
+       id="use160" />
+    <defs
+       id="defs170">
+      <title
+         id="title162">Path</title>
+      <g
+         id="28">
+        <defs
+           id="defs165">
+          <path
+             id="29"
+             d="M15.1054,296.927 C26.189,298.094,37.3932,297.885,48.4939,299.055" />
+        </defs>
+        <use
+           xlink:href="#29"
+           style="fill:none;opacity:1;stroke:#000000;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:1;stroke-width:5.20573;"
+           id="use167" />
+      </g>
+    </defs>
+    <use
+       xlink:href="#28"
+       id="use172" />
+  </g>
+</svg>

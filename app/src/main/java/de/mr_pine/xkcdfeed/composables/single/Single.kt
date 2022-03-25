@@ -71,6 +71,7 @@ fun SingleViewContent(
     setFavorite: (XKCDComic) -> Unit,
     removeFavorite: (XKCDComic) -> Unit,
     colorMatrix: ColorMatrix,
+    getNumber: () -> Int,
     navigateHome: () -> Unit,
     startActivity: (Intent) -> Unit
 ) {
@@ -93,7 +94,9 @@ fun SingleViewContent(
             scaffoldState.bottomSheetState.expand()
     })
 
-    fun getId() = comic.id
+    fun getId(): Int {
+        return comic.id
+    }
     var currentNumberString by remember(comic.id) { mutableStateOf(comic.id.toString()) }
 
     var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
@@ -195,10 +198,10 @@ fun SingleViewContent(
                     coroutineScope = scope,
                     zoomableState = zoomableState,
                     onSwipeLeft = {
-                        if (getId() < maxNumber) setNumber(getId() + 1)
+                        if (getNumber() < maxNumber) setNumber(getNumber() + 1)
                                   },
                     onSwipeRight = {
-                        if (getId() > 0) setNumber(getId() - 1)
+                        if (getNumber() > 0) setNumber(getNumber() - 1)
                                    },
                 ) {
                     Image(
@@ -478,10 +481,10 @@ fun bottomSheetContent(
                             verticalAlignment = Alignment.Bottom
                         ) {
                             Text(
-                                text = comic.title ?: "I am a title :)",
+                                text = comic.title ?: "",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp,
-                                modifier = Modifier.placeholder(comic.title == null)
+                                modifier = Modifier.widthIn(min = if(comic.title == null) 200.dp else 0.dp).placeholder(comic.title == null)
                             )
                             Text(
                                 text = "(${comic.id})",
@@ -595,6 +598,7 @@ fun SingleViewContentStateful(
             setNumber = { singleViewModel.currentComic = mainViewModel.loadComic(it) },
             maxNumber = mainViewModel.latestComicNumber,
             colorMatrix = ColorMatrix(mainViewModel.matrix.toColorMatrix()),
+            getNumber = singleViewModel::getNumber,
             startActivity = { mainViewModel.startActivity(it) },
             navigateHome = navigateHome
         )
