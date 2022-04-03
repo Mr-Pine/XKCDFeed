@@ -5,12 +5,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.launch
 
 private const val TAG = "Login"
 
@@ -47,19 +45,18 @@ class LoginViewModel : ViewModel() {
         }
     }
 
-    fun signInWithCredential(credential: AuthCredential, onFinished: () -> Unit = {}) =
-        viewModelScope.launch {
-            loadingState = LoadingState.LOADING
-            val authResult = auth.signInWithCredential(credential)
-            authResult.addOnSuccessListener {
-                loadingState = LoadingState.LOGGED_IN
-                mutableSignedIn.value = true
-                Log.d(TAG, "signInWithCredential: Finished!")
-                onFinished()
-            }.addOnFailureListener {
-                loadingState = LoadingState.error(it.localizedMessage)
-            }
+    fun signInWithCredential(credential: AuthCredential, onFinished: () -> Unit = {}) {
+        loadingState = LoadingState.LOADING
+        val authResult = auth.signInWithCredential(credential)
+        authResult.addOnSuccessListener {
+            loadingState = LoadingState.LOGGED_IN
+            mutableSignedIn.value = true
+            Log.d(TAG, "signInWithCredential: Finished!")
+            onFinished()
+        }.addOnFailureListener {
+            loadingState = LoadingState.error(it.localizedMessage)
         }
+    }
 
     fun signOut(onFinished: () -> Unit) {
         auth.signOut()
