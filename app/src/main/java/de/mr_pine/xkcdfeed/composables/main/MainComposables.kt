@@ -167,8 +167,8 @@ fun sheetContent(
 @Composable
 fun MainScaffold(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
 
-    Scaffold(topBar = { TopAppBar { viewModel.navigateTo(it) } }) {
-        TabbedContent(viewModel, showSingleComic)
+    Scaffold(topBar = { TopAppBar { viewModel.navigateTo(it) } }) { paddingValues ->
+        TabbedContent(viewModel, showSingleComic, paddingValues)
     }
 }
 
@@ -193,12 +193,12 @@ fun TopAppBar(navigate: (String) -> Unit) {
 //<editor-fold desc="Tab Main Layout">
 @ExperimentalPagerApi
 @Composable
-fun TabbedContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
+fun TabbedContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit, paddingValues: PaddingValues) {
 
     val tabPagerState = rememberPagerState(0)
     val scope = rememberCoroutineScope()
 
-    Column() {
+    Column(modifier = Modifier.padding(paddingValues)) {
         TabRow(
             selectedTabIndex = tabPagerState.currentPage,
             indicator = { tabPositions ->
@@ -271,11 +271,13 @@ fun Tab1(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
         }) {
             Icon(Icons.Default.History, "History")
         }
-    }) {
+    }) { paddingValues ->
         ComicList(
             list = viewModel.latestComicsList,
+            currentTab = MainViewModel.Tab.LATEST,
             viewModel = viewModel,
-            showSingleComic = showSingleComic
+            showSingleComic = showSingleComic,
+            paddingValues = paddingValues
         )
     }
 
@@ -293,12 +295,14 @@ fun Tab2(viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCD
         }) {
             Icon(Icons.Default.Shuffle, "Shuffle")
         }
-    }) {
+    }) { paddingValues ->
         ComicList(
             list = viewModel.favoriteComicsList,
+            currentTab = MainViewModel.Tab.FAVORITES,
             viewModel = viewModel,
             showSingleComic = showSingleComic,
-            state = viewModel.favListState
+            state = viewModel.favListState,
+            paddingValues = paddingValues
         )
     }
 }
@@ -308,11 +312,14 @@ fun Tab2(viewModel: MainViewModel, scope: CoroutineScope, showSingleComic: (XKCD
 fun ComicList(
     list: List<XKCDComic>,
     viewModel: MainViewModel,
+    currentTab: MainViewModel.Tab,
     showSingleComic: (XKCDComic) -> Unit,
-    state: LazyListState? = null
+    state: LazyListState? = null,
+    paddingValues: PaddingValues
 ) {
     LazyColumn(
         Modifier
+            .padding(paddingValues)
             .fillMaxSize()
             .background(MaterialTheme.colors.surface),
         contentPadding = PaddingValues(8.dp),
@@ -329,7 +336,8 @@ fun ComicList(
             ComicCard(
                 item,
                 viewModel.dateFormat,
-                viewModel.favoriteList,
+                viewModel.favoriteList - viewModel.hideFavoritesList,
+                currentTab,
                 viewModel::addFavorite,
                 viewModel::removeFavorite,
                 viewModel.matrix,

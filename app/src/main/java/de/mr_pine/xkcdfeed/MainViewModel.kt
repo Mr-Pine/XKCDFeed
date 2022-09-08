@@ -4,10 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.ModalBottomSheetState
-import androidx.compose.material.ModalBottomSheetValue
-import androidx.compose.material.SnackbarHostState
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -114,6 +111,7 @@ class MainViewModel(
     var favoriteListInitialized = false
     var lastClearType = ClearType.UNDEFINED
     var favoriteList = mutableStateListOf<Int>()
+    var hideFavoritesList = mutableStateListOf<Int>()
 
     var cacheList = ConcurrentLinkedQueue<XKCDComic>()
 
@@ -238,11 +236,17 @@ class MainViewModel(
     }
 
     fun removeFavorite(xkcdComic: XKCDComic) {
+        hideFavoritesList.add(xkcdComic.id)
         viewModelScope.launch {
-            //if(true || snackbarHostState.showSnackbar("Comic removed from favorites", "UNDO") != SnackbarResult.ActionPerformed) {
-            removeFromFavoriteList(xkcdComic.id)
-            removeFromFavoriteComicList(xkcdComic)
-            //}
+            if (snackbarHostState.showSnackbar(
+                    "Comic removed from favorites",
+                    "UNDO"
+                ) != SnackbarResult.ActionPerformed
+            ) {
+                removeFromFavoriteList(xkcdComic.id)
+                removeFromFavoriteComicList(xkcdComic)
+            }
+            hideFavoritesList.remove(xkcdComic.id)
         }
     }
     //</editor-fold>
@@ -297,22 +301,6 @@ class MainViewModel(
         } else {
             addToFavoriteComicList(comic)
         }
-        /*XKCDComic.getComic(
-            number = number,
-            coroutineScope = viewModelScope,
-            context = context,
-            onImageLoaded = {
-                (if (to == Tab.LATEST) latestImagesLoadedMap else favoriteImagesLoadedMap)[number] =
-                    true
-                setComicCacheImageLoaded(number, true)
-            }) {
-            if (to == Tab.LATEST) {
-                addToLatestComicList(it)
-            } else {
-                addToFavoriteComicList(it)
-            }
-            addToComicCache(it, false)
-        }*/
     }
     //</editor-fold>
 

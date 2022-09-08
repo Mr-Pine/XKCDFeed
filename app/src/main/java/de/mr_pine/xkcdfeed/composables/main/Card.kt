@@ -1,5 +1,8 @@
 package de.mr_pine.xkcdfeed.composables.main
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -30,6 +33,7 @@ import coil.size.Size
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.placeholder
 import com.google.accompanist.placeholder.material.shimmer
+import de.mr_pine.xkcdfeed.MainViewModel
 import de.mr_pine.xkcdfeed.XKCDComic
 import de.mr_pine.xkcdfeed.toColorMatrix
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
@@ -70,12 +74,13 @@ val matrix = ColorMatrix(floatArrayOf(
     0f, 0f, 0f, 1f, 0f
 ))*/
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ComicCard(
     xkcdComic: XKCDComic,
     dateFormat: DateFormat,
     favoriteList: List<Int>,
+    tab: MainViewModel.Tab,
     setFavorite: (XKCDComic) -> Unit,
     removeFavorite: (XKCDComic) -> Unit,
     invertMatrix: Array<FloatArray>,
@@ -85,100 +90,102 @@ fun ComicCard(
     val colorFilter = ColorFilter.colorMatrix(ColorMatrix(invertMatrix.toColorMatrix()))
 
     val scope = rememberCoroutineScope()
-    Card(
-        elevation = 5.dp,
-        backgroundColor = if (MaterialTheme.colors.isLight) Color.White else Color.Black,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .combinedClickable(
-                onLongClick = { scope.launch { onLongPress(xkcdComic) } },
-                onClick = { showSingle(xkcdComic) }
-            )
-    ) {
-        MaterialTheme.colors.primarySurface
-        Column(modifier = Modifier.padding(top = 4.dp, start = 8.dp, end = 8.dp, bottom = 8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 3.dp)) {
-                    Text(
-                        text = xkcdComic.title ?: "I am a title :)",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.placeholder(xkcdComic.title == null)
-                    )
-                    Text(
-                        text = "(${xkcdComic.id})",
-                        modifier = Modifier
-                            .padding(start = 4.dp, bottom = 1.5.dp)
-                            .placeholder(xkcdComic.title == null),
-                        fontStyle = FontStyle.Italic,
-                        style = MaterialTheme.typography.caption
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    var icon = Icons.Outlined.StarOutline
-                    var tint = Gray400
-
-                    if (favoriteList.contains(xkcdComic.id)) {
-                        icon = Icons.Filled.Star
-                        tint = Amber500
-                    }
-                    Icon(
-                        icon,
-                        "Star",
-                        tint = tint,
-                        modifier = Modifier.clickable {
-                            (if (!favoriteList.contains(xkcdComic.id)) setFavorite else removeFavorite)(
-                                xkcdComic
-                            )
-                        })
-                }
-            }
-            Text(
-                text = xkcdComic.pubDate.let { if (it != null) dateFormat.format(it.time) else "00/00/0000" },
-                fontStyle = FontStyle.Italic,
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .placeholder(xkcdComic.pubDate == null)
-            )
-            val painter = rememberAsyncImagePainter(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(xkcdComic.imageURL)
-                    .size(Size.ORIGINAL) // Set the target size to load the image at.
-                    .build()
-            )
-
-            Image(
-                painter = painter,
-                //bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Image of the comic",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (painter.state is AsyncImagePainter.State.Success) Modifier else Modifier.sizeIn(
-                            minHeight = 200.dp
+    AnimatedVisibility(visible = tab == MainViewModel.Tab.LATEST || favoriteList.contains(xkcdComic.id), enter = expandVertically(), exit = shrinkVertically()) {
+        Card(
+            elevation = 5.dp,
+            backgroundColor = if (MaterialTheme.colors.isLight) Color.White else Color.Black,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .combinedClickable(
+                    onLongClick = { scope.launch { onLongPress(xkcdComic) } },
+                    onClick = { showSingle(xkcdComic) }
+                )
+        ) {
+            MaterialTheme.colors.primarySurface
+            Column(modifier = Modifier.padding(top = 4.dp, start = 8.dp, end = 8.dp, bottom = 8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 3.dp)) {
+                        Text(
+                            text = xkcdComic.title ?: "I am a title :)",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.placeholder(xkcdComic.title == null)
                         )
-                    )
-                    .placeholder(
-                        painter.state !is AsyncImagePainter.State.Success,
-                        highlight = PlaceholderHighlight.shimmer()
-                    ),
-                colorFilter = if (MaterialTheme.colors.isLight) null else colorFilter
-            )
-            Text(
-                text = xkcdComic.description
-                    ?: "I am a description text. If you see me, something isn't working as intended. Written at 2:36 a.m.",
-                style = MaterialTheme.typography.caption,
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .placeholder(xkcdComic.description == null)
-            )
+                        Text(
+                            text = "(${xkcdComic.id})",
+                            modifier = Modifier
+                                .padding(start = 4.dp, bottom = 1.5.dp)
+                                .placeholder(xkcdComic.title == null),
+                            fontStyle = FontStyle.Italic,
+                            style = MaterialTheme.typography.caption
+                        )
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        var icon = Icons.Outlined.StarOutline
+                        var tint = Gray400
+
+                        if (favoriteList.contains(xkcdComic.id)) {
+                            icon = Icons.Filled.Star
+                            tint = Amber500
+                        }
+                        Icon(
+                            icon,
+                            "Star",
+                            tint = tint,
+                            modifier = Modifier.clip(MaterialTheme.shapes.small).clickable {
+                                (if (!favoriteList.contains(xkcdComic.id)) setFavorite else removeFavorite)(
+                                    xkcdComic
+                                )
+                            })
+                    }
+                }
+                Text(
+                    text = xkcdComic.pubDate.let { if (it != null) dateFormat.format(it.time) else "00/00/0000" },
+                    fontStyle = FontStyle.Italic,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .padding(bottom = 8.dp)
+                        .placeholder(xkcdComic.pubDate == null)
+                )
+                val painter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(xkcdComic.imageURL)
+                        .size(Size.ORIGINAL) // Set the target size to load the image at.
+                        .build()
+                )
+
+                Image(
+                    painter = painter,
+                    //bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "Image of the comic",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (painter.state is AsyncImagePainter.State.Success) Modifier else Modifier.sizeIn(
+                                minHeight = 200.dp
+                            )
+                        )
+                        .placeholder(
+                            painter.state !is AsyncImagePainter.State.Success,
+                            highlight = PlaceholderHighlight.shimmer()
+                        ),
+                    colorFilter = if (MaterialTheme.colors.isLight) null else colorFilter
+                )
+                Text(
+                    text = xkcdComic.description
+                        ?: "I am a description text. If you see me, something isn't working as intended. Written at 2:36 a.m.",
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .placeholder(xkcdComic.description == null)
+                )
+            }
         }
     }
 }
