@@ -10,9 +10,12 @@ import android.text.format.DateFormat
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -35,6 +38,7 @@ import de.mr_pine.xkcdfeed.composables.settings.Theme
 import de.mr_pine.xkcdfeed.composables.settings.settingsDataStore
 import de.mr_pine.xkcdfeed.composables.single.SingleViewContentStateful
 import de.mr_pine.xkcdfeed.ui.theme.XKCDFeedTheme
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -52,13 +56,12 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
 
-    @OptIn(
-        ExperimentalPagerApi::class,
-        androidx.compose.ui.ExperimentalComposeUiApi::class,
-        androidx.compose.foundation.ExperimentalFoundationApi::class,
-        androidx.compose.material.ExperimentalMaterialApi::class,
-        kotlinx.coroutines.ObsoleteCoroutinesApi::class
-    )
+
+    @ExperimentalPagerApi
+    @ExperimentalComposeUiApi
+    @ExperimentalFoundationApi
+    @ExperimentalMaterialApi
+    @ObsoleteCoroutinesApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate: ${intent.data}")
@@ -159,7 +162,10 @@ class MainActivity : ComponentActivity() {
                             mainViewModel = mainViewModel,
                             singleViewModel = singleComicViewModel,
                             navigateHome = {
-                                Log.d(TAG, "onCreate: navigating home $backStackEntry, $navController")
+                                Log.d(
+                                    TAG,
+                                    "onCreate: navigating home $backStackEntry, $navController"
+                                )
                                 navController.navigateUp()
                             }
                         )
