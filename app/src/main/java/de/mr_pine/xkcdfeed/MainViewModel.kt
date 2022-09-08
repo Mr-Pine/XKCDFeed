@@ -50,30 +50,36 @@ class MainViewModel(
 
     init { //implementation of http://www.graficaobscura.com/matrix/index.html
         //RGB invert
-        matrix = matrix.matrixMultiply(arrayOf(
-            floatArrayOf(-1f, 0f, 0f, 0f),
-            floatArrayOf(0f, -1f, 0f, 0f),
-            floatArrayOf(0f, 0f, -1f, 0f),
-            floatArrayOf(0f, 0f, 0f, -1f),
-        ))
-        matrix = matrix.matrixAdd(arrayOf(
-            floatArrayOf(0f, 0f, 0f, 0f),
-            floatArrayOf(0f, 0f, 0f, 0f),
-            floatArrayOf(0f, 0f, 0f, 0f),
-            floatArrayOf(255f, 255f, 255f, 0f),
-        ))
+        matrix = matrix.matrixMultiply(
+            arrayOf(
+                floatArrayOf(-1f, 0f, 0f, 0f),
+                floatArrayOf(0f, -1f, 0f, 0f),
+                floatArrayOf(0f, 0f, -1f, 0f),
+                floatArrayOf(0f, 0f, 0f, -1f),
+            )
+        )
+        matrix = matrix.matrixAdd(
+            arrayOf(
+                floatArrayOf(0f, 0f, 0f, 0f),
+                floatArrayOf(0f, 0f, 0f, 0f),
+                floatArrayOf(0f, 0f, 0f, 0f),
+                floatArrayOf(255f, 255f, 255f, 0f),
+            )
+        )
 
         //HSV 180 rotation
-        matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = 1/ sqrt(2f)))
-        matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = -sqrt(1/3f)))
-        val transformedWeights = arrayOf(floatArrayOf(wR, wG, wB)).matrixMultiply(matrix.cutTo(3,3)).matrixMultiply(matrix.cutTo(3,3))
-        val shearX = (transformedWeights[0][0]/transformedWeights[0][2])
-        val shearY = (transformedWeights[0][1]/transformedWeights[0][2])
+        matrix = matrix.matrixMultiply(xRotation(cos = 1 / sqrt(2f), sin = 1 / sqrt(2f)))
+        matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2 / 3f), sin = -sqrt(1 / 3f)))
+        val transformedWeights =
+            arrayOf(floatArrayOf(wR, wG, wB)).matrixMultiply(matrix.cutTo(3, 3))
+                .matrixMultiply(matrix.cutTo(3, 3))
+        val shearX = (transformedWeights[0][0] / transformedWeights[0][2])
+        val shearY = (transformedWeights[0][1] / transformedWeights[0][2])
         matrix = matrix.matrixMultiply(shearZ(shearX, shearY))
         matrix = matrix.matrixMultiply(zRotation(PI.toFloat()))
         matrix = matrix.matrixMultiply(shearZ(-shearX, -shearY))
-        matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2/3f), sin = sqrt(1/3f)))
-        matrix = matrix.matrixMultiply(xRotation(cos = 1/ sqrt(2f), sin = -1/ sqrt(2f)))
+        matrix = matrix.matrixMultiply(yRotation(cos = sqrt(2 / 3f), sin = sqrt(1 / 3f)))
+        matrix = matrix.matrixMultiply(xRotation(cos = 1 / sqrt(2f), sin = -1 / sqrt(2f)))
 
 
     }
@@ -133,14 +139,14 @@ class MainViewModel(
             if (clearType != null) lastClearType = clearType
             viewModelScope.launch {
                 if (!loginViewModel.signedIn) {
-                    userDataStore.data.first { preferences ->
-                        // No type safety.
-                        Log.d(TAG, "initFavoriteList: hi :)")
-                        val stringList = preferences[favoriteListKey] ?: "[]"
-                        favoriteList.addAll(generateListFromJSON(stringList))
-                        addFromFavoritesList(context, clear)
-                        false
-                    }
+                    val preferences = userDataStore.data.first()
+
+                    // No type safety.
+                    Log.d(TAG, "initFavoriteList: hi :)")
+                    val stringList = preferences[favoriteListKey] ?: "[]"
+                    favoriteList.addAll(generateListFromJSON(stringList))
+                    addFromFavoritesList(context, clear)
+
                 } else {
                     val favoritesReference =
                         db.collection("Users/${loginViewModel.user?.uid}/Favorites")
@@ -234,8 +240,8 @@ class MainViewModel(
     fun removeFavorite(xkcdComic: XKCDComic) {
         viewModelScope.launch {
             //if(true || snackbarHostState.showSnackbar("Comic removed from favorites", "UNDO") != SnackbarResult.ActionPerformed) {
-                removeFromFavoriteList(xkcdComic.id)
-                removeFromFavoriteComicList(xkcdComic)
+            removeFromFavoriteList(xkcdComic.id)
+            removeFromFavoriteComicList(xkcdComic)
             //}
         }
     }
