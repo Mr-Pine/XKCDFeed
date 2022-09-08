@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.ModalBottomSheetValue
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.runtime.*
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -33,6 +34,7 @@ class MainViewModel(
     val navigateTo: (String) -> Unit,
     private val context: Context,
     private val loginViewModel: LoginViewModel,
+    private val snackbarHostState: SnackbarHostState,
     private val addToComicCache: (XKCDComic, Boolean) -> Unit,
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
 ) : ViewModel() {
@@ -112,7 +114,7 @@ class MainViewModel(
     fun loadComic(id: Int): XKCDComic {
         val match = cacheList.indexOfFirst { it.id == id }
         return if (match == -1) {
-            val newComic = XKCDComic(id, viewModelScope, context) {}
+            val newComic = XKCDComic(id, viewModelScope, context)
             cacheList.add(newComic)
             newComic
         } else {
@@ -231,8 +233,10 @@ class MainViewModel(
 
     fun removeFavorite(xkcdComic: XKCDComic) {
         viewModelScope.launch {
-            removeFromFavoriteList(xkcdComic.id)
-            removeFromFavoriteComicList(xkcdComic)
+            //if(true || snackbarHostState.showSnackbar("Comic removed from favorites", "UNDO") != SnackbarResult.ActionPerformed) {
+                removeFromFavoriteList(xkcdComic.id)
+                removeFromFavoriteComicList(xkcdComic)
+            //}
         }
     }
     //</editor-fold>
@@ -344,6 +348,7 @@ class MainViewModelFactory(
     private val navigateTo: (String) -> Unit,
     private val context: Context,
     private val loginViewModel: LoginViewModel,
+    private val snackbarHostState: SnackbarHostState,
     private val addToComicCache: (XKCDComic, Boolean) -> Unit,
     private val setComicCacheImageLoaded: (Int, Boolean) -> Unit
 ) : ViewModelProvider.Factory {
@@ -358,6 +363,7 @@ class MainViewModelFactory(
                 navigateTo,
                 context,
                 loginViewModel,
+                snackbarHostState,
                 addToComicCache,
                 setComicCacheImageLoaded
             ) as T

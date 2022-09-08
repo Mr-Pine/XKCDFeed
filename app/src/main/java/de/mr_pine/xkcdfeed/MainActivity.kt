@@ -12,10 +12,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -94,6 +98,8 @@ class MainActivity : ComponentActivity() {
 
             val singleComicViewModel: SingleComicViewModel = viewModel()
 
+            val scaffoldState = rememberScaffoldState()
+
             val mainViewModel: MainViewModel = ViewModelProvider(
                 this,
                 MainViewModelFactory(
@@ -103,6 +109,7 @@ class MainActivity : ComponentActivity() {
                     navController::navigate,
                     this.baseContext,
                     loginViewModel,
+                    scaffoldState.snackbarHostState,
                     singleComicViewModel::addToComicCache,
                     singleComicViewModel::setComicCacheImageLoaded
                 )
@@ -127,85 +134,88 @@ class MainActivity : ComponentActivity() {
                 }
             ) {
 
-                val rootUri = "xkcd.com"
-                NavHost(navController = navController, startDestination = "mainView") {
-                    composable(
-                        "mainView", deepLinks = listOf(
-                            navDeepLink { uriPattern = rootUri },
-                            navDeepLink { uriPattern = "$rootUri/" },
-                            navDeepLink { uriPattern = "www.$rootUri" },
-                            navDeepLink { uriPattern = "www.$rootUri/" },
-                        )
-                    ) {
-                        MainContent(mainViewModel) {
-                            navController.navigate("singleView/${it.id}")
-                        }
-                        lastDestination = "mainView"
-                    }
-                    composable("test") { Text("hello") }
-                    composable(
-                        route = "singleView/{number}",
-                        arguments = listOf(navArgument("number") { type = NavType.IntType }),
-                        deepLinks = listOf(
-                            navDeepLink { uriPattern = "$rootUri/{number}/" },
-                            navDeepLink { uriPattern = "$rootUri/{number}" },
-                            navDeepLink { uriPattern = "www.$rootUri/{number}/" },
-                            navDeepLink { uriPattern = "www.$rootUri/{number}" },
-                        )
-                    ) { backStackEntry ->
-                        val comicNumber = backStackEntry.arguments?.getInt("number")
-
-                        if (lastDestination != "singleView") singleComicViewModel.currentComic =
-                            comicNumber?.let { mainViewModel.loadComic(it) }
-
-                        SingleViewContentStateful(
-                            mainViewModel = mainViewModel,
-                            singleViewModel = singleComicViewModel,
-                            navigateHome = {
-                                Log.d(
-                                    TAG,
-                                    "onCreate: navigating home $backStackEntry, $navController"
-                                )
-                                navController.navigateUp()
+                Scaffold(scaffoldState = scaffoldState) { paddingValues ->
+                    val rootUri = "xkcd.com"
+                    NavHost(navController = navController, startDestination = "mainView", modifier = Modifier.padding(paddingValues)) {
+                        composable(
+                            "mainView", deepLinks = listOf(
+                                navDeepLink { uriPattern = rootUri },
+                                navDeepLink { uriPattern = "$rootUri/" },
+                                navDeepLink { uriPattern = "www.$rootUri" },
+                                navDeepLink { uriPattern = "www.$rootUri/" },
+                            )
+                        ) {
+                            MainContent(mainViewModel) {
+                                navController.navigate("singleView/${it.id}")
                             }
-                        )
-                        lastDestination = "singleView"
-                    }
-                    composable(
-                        route = "singleView"
-                    ) {
-                        if (singleComicViewModel.currentComic == null) {
-                            singleComicViewModel.currentComic =
-                                mainViewModel.loadComic(mainViewModel.latestComicNumber)
+                            lastDestination = "mainView"
                         }
-                        SingleViewContentStateful(
-                            mainViewModel = mainViewModel,
-                            singleViewModel = singleComicViewModel,
-                            navigateHome = navController::navigateUp
-                        )
+                        composable("test") { Text("hello") }
+                        composable(
+                            route = "singleView/{number}",
+                            arguments = listOf(navArgument("number") { type = NavType.IntType }),
+                            deepLinks = listOf(
+                                navDeepLink { uriPattern = "$rootUri/{number}/" },
+                                navDeepLink { uriPattern = "$rootUri/{number}" },
+                                navDeepLink { uriPattern = "www.$rootUri/{number}/" },
+                                navDeepLink { uriPattern = "www.$rootUri/{number}" },
+                            )
+                        ) { backStackEntry ->
+                            val comicNumber = backStackEntry.arguments?.getInt("number")
 
-                        lastDestination = "singleView"
-                    }
-                    composable(route = "settings") {
-                        SettingsComposable(
-                            navigateBack = { navController.navigateUp() },
-                            loginViewModel = loginViewModel,
-                            mainViewModel = mainViewModel,
-                            context = this@MainActivity.baseContext,
-                            onLoginChanged = {
-                                scope.launch {
-                                    mainViewModel.initFavoriteList(
-                                        this@MainActivity,
-                                        true,
-                                        if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
+                            if (lastDestination != "singleView") singleComicViewModel.currentComic =
+                                comicNumber?.let { mainViewModel.loadComic(it) }
+
+                            SingleViewContentStateful(
+                                mainViewModel = mainViewModel,
+                                singleViewModel = singleComicViewModel,
+                                navigateHome = {
+                                    Log.d(
+                                        TAG,
+                                        "onCreate: navigating home $backStackEntry, $navController"
                                     )
+                                    navController.navigateUp()
                                 }
+                            )
+                            lastDestination = "singleView"
+                        }
+                        composable(
+                            route = "singleView"
+                        ) {
+                            if (singleComicViewModel.currentComic == null) {
+                                singleComicViewModel.currentComic =
+                                    mainViewModel.loadComic(mainViewModel.latestComicNumber)
                             }
-                        )
+                            SingleViewContentStateful(
+                                mainViewModel = mainViewModel,
+                                singleViewModel = singleComicViewModel,
+                                navigateHome = navController::navigateUp
+                            )
 
-                        lastDestination = "settings"
+                            lastDestination = "singleView"
+                        }
+                        composable(route = "settings") {
+                            SettingsComposable(
+                                navigateBack = { navController.navigateUp() },
+                                loginViewModel = loginViewModel,
+                                mainViewModel = mainViewModel,
+                                context = this@MainActivity.baseContext,
+                                onLoginChanged = {
+                                    scope.launch {
+                                        mainViewModel.initFavoriteList(
+                                            this@MainActivity,
+                                            true,
+                                            if (loginViewModel.signedIn) MainViewModel.ClearType.FIREBASE else MainViewModel.ClearType.LOCAL
+                                        )
+                                    }
+                                }
+                            )
+
+                            lastDestination = "settings"
+                        }
                     }
                 }
+
             }
         }
     }

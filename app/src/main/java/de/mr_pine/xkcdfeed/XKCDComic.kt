@@ -26,16 +26,13 @@ private const val TAG = "XKCDComic"
 
 class XKCDComic(
     val id: Int,
-    private val coroutineScope: CoroutineScope,
-    context: Context,
-    onImageLoaded: () -> Unit
+    coroutineScope: CoroutineScope,
+    context: Context
 ) {
     var title: String? by mutableStateOf(null)
     var pubDate: Calendar? by mutableStateOf(null)
     var imageURL by mutableStateOf("")
     var description: String? by mutableStateOf(null)
-    var bitmapLight: Bitmap? by mutableStateOf(null)
-    var bitmapDark: Bitmap? by mutableStateOf(null)
 
     private val TAG = "XKCDComic"
 
