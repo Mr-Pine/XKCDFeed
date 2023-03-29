@@ -1,22 +1,22 @@
 [versions]
-compose = "1.2.1"
-composeCompiler = "1.3.1"
-accompanist = "0.25.1"
-kotlin = "1.7.10"
-firebase = "29.0.3"
-ktx = "1.8.0"
-lifecycle = "2.5.1"
-activity-compose = "1.5.1"
-appcompat = "1.5.0"
-material = "1.6.1"
+compose = "1.4.0"
+composeCompiler = "1.4.4"
+accompanist = "0.30.0"
+kotlin = "1.8.10"
+firebase = "31.3.0"
+ktx = "1.9.0"
+lifecycle = "2.6.1"
+activity-compose = "1.7.0"
+appcompat = "1.6.1"
+material = "1.8.0"
 volley = "1.2.1"
-coil = "2.2.0"
-zoomables = "1.1.1"
+coil = "2.3.0"
+zoomables = "1.2.0"
 datastore = "1.0.0"
 ossLicences = "17.0.0"
 ossLicences-plugin = "0.10.6"
-navigation = "2.5.1"
-playAuth = "20.3.0"
+navigation = "2.5.3"
+playAuth = "20.4.0"
 
 [libraries]
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase" }
@@ -44,7 +44,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 accompanist-systemuicontroller = { group = "com.google.accompanist", name = "accompanist-systemuicontroller", version.ref = "accompanist" }
 accompanist-pager = { group = "com.google.accompanist", name = "accompanist-pager", version.ref = "accompanist" }
 accompanist-pager-indicators = { group = "com.google.accompanist", name = "accompanist-pager-indicators", version.ref = "accompanist" }
-accompanist-placeholder = { group = "com.google.accompanist", name = "accompanist-placeholder", version.ref = "accompanist" }
+accompanist-placeholder = { group = "com.google.accompanist", name = "accompanist-placeholder-material", version.ref = "accompanist" }
 
 volley = { group = "com.android.volley", name = "volley", version.ref = "volley" }
 coil = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }

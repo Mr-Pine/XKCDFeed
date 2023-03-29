@@ -33,7 +33,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
-import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
 import de.mr_pine.xkcdfeed.composables.main.MainContent
@@ -61,7 +60,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var navController: NavHostController
 
 
-    @ExperimentalPagerApi
     @ExperimentalComposeUiApi
     @ExperimentalFoundationApi
     @ExperimentalMaterialApi

@@ -54,6 +54,7 @@ import de.mr_pine.zoomables.rememberZoomableState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.DateFormat
+import kotlin.math.max
 import kotlin.random.Random
 
 private const val TAG = "Single"
@@ -82,21 +83,16 @@ fun SingleViewContent(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val painter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(comic.imageURL)
+        model = ImageRequest.Builder(LocalContext.current).data(comic.imageURL)
             .size(Size.ORIGINAL) // Set the target size to load the image at.
             .build()
     )
 
     val orientation = LocalConfiguration.current.orientation
     LaunchedEffect(key1 = Unit, block = {
-        if (orientation == Configuration.ORIENTATION_PORTRAIT && scaffoldState.bottomSheetState.isCollapsed)
-            scaffoldState.bottomSheetState.expand()
+        if (orientation == Configuration.ORIENTATION_PORTRAIT && scaffoldState.bottomSheetState.isCollapsed) scaffoldState.bottomSheetState.expand()
     })
 
-    fun getId(): Int {
-        return comic.id
-    }
     var currentNumberString by remember(comic.id) { mutableStateOf(comic.id.toString()) }
 
     var parentSize by remember { mutableStateOf(IntSize(0, 0)) }
@@ -115,25 +111,26 @@ fun SingleViewContent(
                         Icon(Icons.Default.Close, "Close")
                     }
                     IconButton(
-                        onClick = { setNumber(comic.id - 1) },
-                        enabled = comic.id > 0
+                        onClick = { setNumber(comic.id - 1) }, enabled = comic.id > 0
                     ) {
                         Icon(Icons.Default.ArrowBack, "Previous Comic")
                     }
                     OutlinedTextField(
                         value = currentNumberString,
-                        modifier = Modifier
-                            .width(100.dp),
+                        modifier = Modifier.width(100.dp),
                         keyboardOptions = KeyboardOptions.Default.copy(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
+                            keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
                         ),
                         onValueChange = {
+                            if(it.isBlank()) {
+                                currentNumberString = ""
+                                return@OutlinedTextField
+                            }
                             try {
                                 currentNumberString = it.filter { digit -> digit.isDigit() }
                                     .takeIf { newString -> newString.toInt() <= maxNumber }
                                     ?: currentNumberString
-                                if (currentNumberString != "") {
+                                if (currentNumberString.isNotBlank()) {
                                     val newNumber = currentNumberString.toInt()
                                     if (newNumber <= maxNumber) setNumber(newNumber)
                                 }
@@ -154,8 +151,7 @@ fun SingleViewContent(
                         })
                     )
                     IconButton(
-                        onClick = { setNumber(comic.id + 1) },
-                        enabled = comic.id < maxNumber
+                        onClick = { setNumber(comic.id + 1) }, enabled = comic.id < maxNumber
                     ) {
                         Icon(Icons.Default.ArrowForward, "Next Comic")
                     }
@@ -172,25 +168,21 @@ fun SingleViewContent(
             bottomEnd = CornerSize(0.dp)
         ),
         sheetContent = bottomSheetContent(
-            comic,
-            dateFormat,
-            isFavorite,
-            setFavorite,
-            removeFavorite,
-            startActivity,
-            scope
+            comic, dateFormat, isFavorite, setFavorite, removeFavorite, startActivity, scope
         ),
-        modifier = Modifier
-            .onGloballyPositioned { layoutCoordinates ->
-                parentSize = layoutCoordinates.size
-            }
+        modifier = Modifier.onGloballyPositioned { layoutCoordinates ->
+            parentSize = layoutCoordinates.size
+        }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(if (MaterialTheme.colors.isLight) Color.White else Color.Black)
-                .padding(bottom = with(LocalDensity.current) { (parentSize.height - scaffoldState.bottomSheetState.offset.value).toDp() }),
-            contentAlignment = Alignment.Center
+                .padding(bottom = with(LocalDensity.current) {
+                    max(
+                        0f, (parentSize.height - scaffoldState.bottomSheetState.requireOffset())
+                    ).toDp()
+                }), contentAlignment = Alignment.Center
         ) {
             val zoomableState = rememberZoomableState()
             if (painter.state is AsyncImagePainter.State.Success) {
@@ -199,10 +191,10 @@ fun SingleViewContent(
                     zoomableState = zoomableState,
                     onSwipeLeft = {
                         if (getNumber() < maxNumber) setNumber(getNumber() + 1)
-                                  },
+                    },
                     onSwipeRight = {
                         if (getNumber() > 0) setNumber(getNumber() - 1)
-                                   },
+                    },
                 ) {
                     Image(
                         painter,
@@ -211,7 +203,9 @@ fun SingleViewContent(
                             .fillMaxSize()
                             .clip(RectangleShape)
                             .padding(2.dp),
-                        colorFilter = if(MaterialTheme.colors.isLight) null else ColorFilter.colorMatrix(colorMatrix)
+                        colorFilter = if (MaterialTheme.colors.isLight) null else ColorFilter.colorMatrix(
+                            colorMatrix
+                        )
                     )
                 }
             } else {
@@ -269,7 +263,9 @@ fun bottomSheetContent(
                                 text = comic.title ?: "",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp,
-                                modifier = Modifier.widthIn(min = if(comic.title == null) 200.dp else 0.dp).placeholder(comic.title == null)
+                                modifier = Modifier
+                                    .widthIn(min = if (comic.title == null) 200.dp else 0.dp)
+                                    .placeholder(comic.title == null)
                             )
                             Text(
                                 text = "(${comic.id})",
@@ -286,8 +282,7 @@ fun bottomSheetContent(
                     }
                 }
                 Column(
-                    horizontalAlignment = Alignment.End,
-                    modifier = Modifier.fillMaxWidth()
+                    horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth()
                 ) {
                     var icon = Icons.Outlined.StarOutline
                     var tint = Gray400
@@ -296,16 +291,16 @@ fun bottomSheetContent(
                         icon = Icons.Filled.Star
                         tint = Amber500
                     }
-                    Icon(
-                        icon,
+                    Icon(icon,
                         "Star",
                         tint = tint,
-                        modifier = Modifier.clip(MaterialTheme.shapes.small).clickable {
-                            (if (!isFavorite) setFavorite else removeFavorite)(
-                                comic
-                            )
-                        }
-                    )
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.small)
+                            .clickable {
+                                (if (!isFavorite) setFavorite else removeFavorite)(
+                                    comic
+                                )
+                            })
                 }
             }
             Text(
@@ -315,7 +310,8 @@ fun bottomSheetContent(
             )
             Spacer(modifier = Modifier.height(18.dp))
             Row(
-                horizontalArrangement = Arrangement.SpaceAround, modifier = Modifier
+                horizontalArrangement = Arrangement.SpaceAround,
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp)
             ) {
@@ -332,9 +328,7 @@ fun bottomSheetContent(
                         tint = Amber500
                     }
                     Icon(
-                        icon,
-                        "Star",
-                        tint = tint
+                        icon, "Star", tint = tint
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(if (isFavorite) "Remove" else "Add")
@@ -351,8 +345,7 @@ fun bottomSheetContent(
                     }
                 }, modifier = Modifier.width(140.dp)) {
                     Icon(
-                        Icons.Default.Share,
-                        "Star"
+                        Icons.Default.Share, "Star"
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Share")
@@ -367,16 +360,16 @@ fun bottomSheetContent(
 @ExperimentalMaterialApi
 @Composable
 fun SingleViewContentStateful(
-    singleViewModel: SingleComicViewModel,
-    mainViewModel: MainViewModel,
-    navigateHome: () -> Unit
+    singleViewModel: SingleComicViewModel, mainViewModel: MainViewModel, navigateHome: () -> Unit
 ) {
     val currentComic = singleViewModel.currentComic
     val favoriteList = mainViewModel.favoriteList
     if (currentComic != null) {
         SingleViewContent(
             comic = currentComic,
-            isFavorite = favoriteList.contains(currentComic.id) && !mainViewModel.hideFavoritesList.contains(currentComic.id),
+            isFavorite = favoriteList.contains(currentComic.id) && !mainViewModel.hideFavoritesList.contains(
+                currentComic.id
+            ),
             dateFormat = mainViewModel.dateFormat,
             setFavorite = mainViewModel::addFavorite,
             removeFavorite = mainViewModel::removeFavorite,

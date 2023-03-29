@@ -2,6 +2,7 @@ package de.mr_pine.xkcdfeed.composables.main
 
 import android.content.Intent
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -20,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.pager.*
 import de.mr_pine.xkcdfeed.MainViewModel
 import de.mr_pine.xkcdfeed.XKCDComic
 import de.mr_pine.xkcdfeed.ui.theme.Amber500
@@ -29,7 +31,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-@ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
 fun MainContent(
@@ -44,7 +45,6 @@ fun MainContent(
 
 
 //<editor-fold desc="Bottom Sheet Composables">
-@ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
 fun SheetLayout(
@@ -162,7 +162,6 @@ fun sheetContent(
 //</editor-fold>
 
 //<editor-fold desc="Main Scaffold with Top Bar">
-@ExperimentalPagerApi
 @ExperimentalMaterialApi
 @Composable
 fun MainScaffold(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit) {
@@ -191,9 +190,13 @@ fun TopAppBar(navigate: (String) -> Unit) {
 
 //<editor-fold desc="Tabs">
 //<editor-fold desc="Tab Main Layout">
-@ExperimentalPagerApi
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TabbedContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit, paddingValues: PaddingValues) {
+fun TabbedContent(
+    viewModel: MainViewModel,
+    showSingleComic: (XKCDComic) -> Unit,
+    paddingValues: PaddingValues
+) {
 
     val tabPagerState = rememberPagerState(0)
     val scope = rememberCoroutineScope()
@@ -201,11 +204,6 @@ fun TabbedContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit
     Column(modifier = Modifier.padding(paddingValues)) {
         TabRow(
             selectedTabIndex = tabPagerState.currentPage,
-            indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
-                    Modifier.pagerTabIndicatorOffset(tabPagerState, tabPositions)
-                )
-            },
             backgroundColor = MaterialTheme.colors.primary
         ) {
             Tab(
@@ -223,10 +221,8 @@ fun TabbedContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit
                 unselectedContentColor = Color(0x80FFFFFF)
             )
         }
-        HorizontalPager(count = 2, state = tabPagerState) { page ->
+        HorizontalPager(pageCount = 2, state = tabPagerState) { page ->
             TabContent(
-                pagerState = tabPagerState,
-                pagerScope = this,
                 page,
                 viewModel,
                 scope = scope,
@@ -236,11 +232,9 @@ fun TabbedContent(viewModel: MainViewModel, showSingleComic: (XKCDComic) -> Unit
     }
 }
 
-@ExperimentalPagerApi
+@ExperimentalFoundationApi
 @Composable
 fun TabContent(
-    pagerState: PagerState,
-    pagerScope: PagerScope,
     pageIndex: Int,
     viewModel: MainViewModel,
     scope: CoroutineScope,
